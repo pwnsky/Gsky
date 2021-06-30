@@ -7,14 +7,15 @@ import time
 #from Crypto.Util.number import bytes_to_long
 from pwn import *
 
-DEBUG = 0
+DEBUG = 1
 uid = ''
 tid = ''
 sk = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+
 if(DEBUG == 1):
     sk.connect(('127.0.0.1', 8080))
-else:
-    sk.connect(('pwnsky.com', 4096))
+#else:
+#    sk.connect(('pwnsky.com', 4096))
 def psp_send(d):
     p =  b'PSP\x00'
     p += b'\x00\x00\x00\x00'
@@ -33,6 +34,7 @@ def psp_recv():
             break
         body += sk.recv(1)
     return body
+print('send...')
 psp_send(b'abc')
 print("recv: ")
 print(psp_recv())

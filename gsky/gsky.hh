@@ -67,7 +67,7 @@ using sp_channel = std::shared_ptr<gsky::net::channel>;
 namespace work {
 class work;
 typedef void (*server_handler)(gsky::work::work *);
-server_handler server_handler_;
+extern server_handler server_handler_;
 }
 
 // namespace work end

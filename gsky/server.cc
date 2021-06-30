@@ -15,6 +15,7 @@ extern gsky::log::log *gsky::data::p_log;
 extern std::string gsky::data::log_path;
 std::string gsky::data::config_path;
 std::string gsky::data::protocol;
+gsky::work::server_handler gsky::work::server_handler_;
 
 std::vector<std::string> gsky::data::forbid_ips;
 gsky::util::firewall *gsky::data::firewall = nullptr;
@@ -67,12 +68,15 @@ bool gsky::server::run() {
         }
 
         logger() << "*************  start gsky psp server...  ***************";
-        std::cout << "\ngsky port: " << port_ << "  number of thread: " << number_of_thread_ << '\n';
+        std::cout << "\ngsky server port: " << port_ << "  number of thread: " << number_of_thread_ << "\n"
+            << " Log file at: " << gsky::data::log_path;
+
         if(false == this->run_network_module()) {
             std::cout << "Run network module failed!\n";
             logger() << log_dbg("Run network module failed!");
             break;
         }
+
         error = false;
     }while(false);
     return error;
