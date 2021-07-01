@@ -201,7 +201,7 @@ gsky server port: 8080  number of thread: 4
 
 测试服务器
 
-由于服务器采用pp协议进行传输的，使用example/client.py进行测试，若想使用pp协议客户端，则访问https://github.com/pwnsky/pp下载相应的客户端pp协议库。
+由于服务器采用pp协议进行传输的，使用example/client.py进行测试，若想使用pp协议客户端，则访问 [pp](https://github.com/pwnsky/pp) 下载相应的客户端pp协议库。
 
 ```
 ./client.py
