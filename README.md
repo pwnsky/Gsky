@@ -3,7 +3,7 @@
 ## 介绍
 
 为了便于更快速开发高性能游戏服务器，特意基于lgx web服务器框架，二次开发且封装为一个服务器库。
-gsky是一个基于epoll架构的高性能游戏服务器库，采用更快速的pp (pwnsky protocol)二进制协议进行传输数据。
+gsky是一个基于epoll架构的高性能游戏服务器库，采用更快速的pp (pwnsky protocol)二进制加密协议进行传输数据。
 
 [pp协议sdk](https://github.com/pwnsky/pp)
 
