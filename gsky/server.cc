@@ -67,7 +67,7 @@ bool gsky::server::run() {
             break;
         }
 
-        logger() << "*************  start gsky psp server...  ***************";
+        logger() << "*************  start gsky pp server...  ***************";
         std::cout << "\ngsky server port: " << port_ << "  number of thread: " << number_of_thread_ << "\n"
             << " Log file at: " << gsky::data::log_path;
 

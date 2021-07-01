@@ -12,38 +12,37 @@
 
 #include <gsky/gsky.hh>
 #include <gsky/net/eventloop.hh>
+#include <gsky/net/pp.hh>
+
 #include <gsky/util/vessel.hh>
 #include <gsky/log/log.hh>
 #include <gsky/util/firewall.hh>
-#include <gsky/util/md5.hh>
+//#include <gsky/util/md5.hh>
 #include <gsky/util/util.hh>
 #include <gsky/work/work.hh>
 
 using logger = gsky::log::logger;
 
-enum class gsky::net::PSPRecvState {
-    PARSE_HEADER = 0,
-    RECV_CONTENT,
-    WORK,
-    FINISH
+// pp_socket (pwnsky protocl socket)
+class gsky::net::pp_socket final : public std::enable_shared_from_this<pp_socket> {
+public:
+
+enum class socket_status {
+    connected = 0,
+    disconnecting,
+    disconnected,
 };
 
-enum class gsky::net::PSPConnectionState {
-    CONNECTED = 0,
-    DISCONNECTING,
-    DISCONNECTED
-};
-
-class gsky::net::psp final : public std::enable_shared_from_this<psp> {
-struct protocol {
-    char magic[4]; // "PSP\x00" 0x00505350  5264208
-    char router[4];    // router
-    unsigned int length;
+enum class pp_status {
+    parse_header = 0,
+    recv_content,
+    work,
+    finish,
 };
 
 public:
-    explicit psp(int fd,eventloop *elp);
-    ~psp();
+    explicit pp_socket(int fd,eventloop *elp);
+    ~pp_socket();
     void reset();
     sp_channel get_sp_channel();
     eventloop *get_eventloop();
@@ -71,15 +70,15 @@ private:
     gsky::util::vessel in_buffer_;
     std::shared_ptr<gsky::util::vessel> out_buffer_ = nullptr;
     std::queue<std::shared_ptr<gsky::util::vessel>> out_buffer_queue_;
-    PSPConnectionState psp_connection_state_;
-    PSPRecvState psp_process_state_;
+    socket_status connection_status_;
+    pp_status process_status_;
     int wait_event_count_ = 0; //用于计数等待事件的数量
     std::string client_ip_;
     std::string client_port_;
     std::shared_ptr<gsky::work::work> sp_work_;
 
     std::map<std::string, std::string> map_client_info_;
-    protocol header_;
+    gsky::net::pp_header header_;
     int  body_left_length_ = 0;
     void handle_read();
     void handle_write();

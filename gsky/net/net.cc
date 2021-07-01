@@ -118,10 +118,10 @@ void gsky::net::net::handle_new_connection() {
         // add event to deal with
         //d_cout << "handle new connection\n";
         eventloop *next_eventloop = up_eventloop_threadpool_->get_next_eventloop();
-        sp_psp sph(new psp(accept_fd, next_eventloop));
+        sp_pp_socket sph(new pp_socket(accept_fd, next_eventloop));
         sph->set_client_info(client_ip, client_port);
         sph->get_sp_channel()->set_holder(sph);
-        next_eventloop->push_back(std::bind(&psp::new_evnet, sph));
+        next_eventloop->push_back(std::bind(&pp_socket::new_evnet, sph));
     }
     accept_channel_->set_event(EPOLLIN | EPOLLET);
 }

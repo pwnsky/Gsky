@@ -39,7 +39,7 @@ enum class RouterRoot {
 // 服务器回调函数, 函数格式为 void func(gsky::work::work *)
 void server_run(gsky::work::work *w) {
 
-    switch((RouterRoot)w->router_[0]) {
+    switch((RouterRoot)w->route_[0]) {
         case RouterRoot::Keep: {
             w->send_data("Keep");
         } break;

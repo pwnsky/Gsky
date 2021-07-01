@@ -3,21 +3,19 @@
 #include <string>
 #include <fstream>
 #include <cstring>
-
 #include <gsky/gsky.hh>
 
 /* Type define */
 typedef unsigned char byte;
 typedef unsigned long ulong;
 
-
-/* md5 declaration. */
-class gsky::util::md5 {
+/* Pwnsky md5 declaration. */
+class gsky::crypto::pmd5 {
 public:
-	md5();
-	md5(const void *input, size_t length);
-    md5(const std::string &str);
-    md5(std::ifstream &in);
+	pmd5();
+	pmd5(const void *input, size_t length);
+    pmd5(const std::string &str);
+    pmd5(std::ifstream &in);
 	void update(const void *input, size_t length);
     void update(const std::string &str);
     void update(std::ifstream &in);
@@ -34,8 +32,8 @@ private:
     std::string bytes_to_hex_string(const byte *input, size_t length);
 
 	/* class uncopyable */
-	md5(const md5&);
-	md5& operator=(const md5&);
+	pmd5(const pmd5&);
+	pmd5& operator=(const pmd5&);
 private:
 	ulong _state[4];	/* state (ABCD) */
 	ulong _count[2];	/* number of bits, modulo 2^64 (low-order word first) */

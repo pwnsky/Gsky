@@ -21,7 +21,7 @@ WORK_PATH   :=  ./gsky/work
 LOG_PATH    :=  ./gsky/log
 THIRD_PATH  :=  ./gsky/third
 UTIL_PATH   :=  ./gsky/util
-SECURITY_PATH := ./gsky/security
+CRYPTO_PATH :=  ./gsky/crypto
 MAIN_PATH   :=  ./gsky
 LOG_FILE := ./gsky.log
 
@@ -32,35 +32,35 @@ MAIN_SRC := $(wildcard $(MAIN_PATH)/*.cc)
 MAIN_OBJ := $(patsubst %.cc, %.o, $(MAIN_SRC)) 
 OBJS += $(MAIN_OBJ)
 
-# util gsky
+# util
 UTIL_SRC := $(wildcard $(UTIL_PATH)/*.cc)  
 UTIL_OBJ := $(patsubst %.cc, %.o, $(UTIL_SRC)) 
 OBJS += $(UTIL_OBJ)
 
-# net gsky
+# net
 NET_SRC := $(wildcard $(NET_PATH)/*.cc)  
 NET_OBJ := $(patsubst %.cc, %.o, $(NET_SRC)) 
 OBJS += $(NET_OBJ)
 
-# thread gsky
+# thread
 THREAD_SRC := $(wildcard $(THREAD_PATH)/*.cc)  
 THREAD_OBJ := $(patsubst %.cc, %.o, $(THREAD_SRC)) 
 OBJS += $(THREAD_OBJ)
 
-# work gsky
+# work
 WORK_SRC := $(wildcard $(WORK_PATH)/*.cc)  
 WORK_OBJ := $(patsubst %.cc, %.o, $(WORK_SRC)) 
 OBJS += $(WORK_OBJ)
 
-# log gsky
+# log
 LOG_SRC := $(wildcard $(LOG_PATH)/*.cc)  
 LOG_OBJ := $(patsubst %.cc, %.o, $(LOG_SRC)) 
 OBJS += $(LOG_OBJ)
 
-# security gsky
-SECURITY_SRC := $(wildcard $(SECURITY_PATH)/*.cc)  
-SECURITY_OBJ := $(patsubst %.cc, %.o, $(SECURITY_SRC)) 
-OBJS += $(SECURITY_OBJ)
+# crypto
+CRYPTO_SRC := $(wildcard $(CRYPTO_PATH)/*.cc)  
+CRYPTO_OBJ := $(patsubst %.cc, %.o, $(CRYPTO_SRC)) 
+OBJS += $(CRYPTO_OBJ)
 
 # complie
 libgsky.so:$(OBJS)

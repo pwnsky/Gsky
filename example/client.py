@@ -16,7 +16,7 @@ if(DEBUG == 1):
     sk.connect(('127.0.0.1', 8080))
 #else:
 #    sk.connect(('pwnsky.com', 4096))
-def psp_send(d):
+def pp_send(d):
     p =  b'PSP\x00'
     p += b'\x00\x00\x00\x00'
     p += (len(d) + 0).to_bytes(4, byteorder='big', signed=False)
@@ -24,7 +24,7 @@ def psp_send(d):
     sk.send(p)
     sk.send(d)
 
-def psp_recv():
+def pp_recv():
     s = sk.recv(12);
     length = int.from_bytes(s[8:12], byteorder='big', signed=False)
     print('router: ' + str(s[4:8]) + ' length: ' + str(length))
@@ -35,6 +35,6 @@ def psp_recv():
         body += sk.recv(1)
     return body
 print('send...')
-psp_send(b'abc')
+pp_send(b'abc')
 print("recv: ")
-print(psp_recv())
+print(pp_recv())

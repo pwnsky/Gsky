@@ -3,7 +3,7 @@
 ## 介绍
 
 为了便于更快速开发高性能游戏服务器，特意基于lgx web服务器框架，二次开发且封装为一个服务器库。
-gsky是一个基于epoll架构的高性能游戏服务器库，采用更快速的psp (pwnsky protocol)二进制协议进行传输数据。
+gsky是一个基于epoll架构的高性能游戏服务器库，采用更快速的pp (pwnsky protocol)二进制协议进行传输数据。
 
 
 ## 如何使用？
@@ -23,37 +23,41 @@ make install # 安装gsky库
 build
 ├── include
 │   └── gsky
-│       ├── gsky.hh # gsky服务器总声明
-│       ├── log # 日志模块
+│       ├── crypto
+│       │   ├── pe.hh
+│       │   └── pmd5.hh
+│       ├── gsky.hh
+│       ├── log
 │       │   ├── log.hh
 │       │   └── log_thread.hh
-│       ├── net # 网络模块
+│       ├── net
 │       │   ├── channel.hh
 │       │   ├── epoll.hh
 │       │   ├── eventloop.hh
 │       │   ├── eventloop_thread.hh
 │       │   ├── eventloop_threadpool.hh
 │       │   ├── net.hh
-│       │   ├── psp.hh
+│       │   ├── pp.hh
+│       │   ├── pp_socket.hh
 │       │   └── util.hh
 │       ├── server.hh
-│       ├── thread # 线程模块
+│       ├── thread
 │       │   ├── condition.hh
 │       │   ├── count_down_latch.hh
 │       │   ├── mutex_lock.hh
 │       │   ├── noncopyable.hh
 │       │   └── thread.hh
-│       ├── util # 工具模块
+│       ├── util
 │       │   ├── firewall.hh
 │       │   ├── json.hh
-│       │   ├── md5.hh
 │       │   ├── url.hh
 │       │   ├── util.hh
 │       │   └── vessel.hh
-│       └── work # 逻辑调用模块
+│       └── work
 │           └── work.hh
 └── lib
-    └── libgsky.so # 编译好的gsky动态库
+    └── libgsky.so
+
 ```
 
 详情请查看头文件api。
@@ -106,7 +110,7 @@ enum class RouterRoot {
 // 服务器回调函数, 函数格式为 void func(gsky::work::work *)
 void server_run(gsky::work::work *w) {
 
-    switch((RouterRoot)w->router_[0]) {
+    switch((RouterRoot)w->route_[0]) {
         case RouterRoot::Keep: {
             w->send_data("Keep"); // 发送给客户端"Keep"字符串
         } break;
@@ -154,6 +158,7 @@ int main(int argc, char **argv) {
     std::cout << "\033[40;33mgsky quited! \n\033[0m";
     return 0;
 }
+
 ```
 
 
@@ -163,11 +168,13 @@ int main(int argc, char **argv) {
 g++ -lgsky -lpthread main.cc
 ```
 
-运行该程序需要指定下配置文件，一般常用配置文件在https://github.com/pwnsky/gsky/blob/main/conf/gsky.conf
+运行该程序需要指定下配置文件，一般常用配置文件在 
+
+https://github.com/pwnsky/gsky/blob/main/conf/gsky.conf
 
 ```
 {
-    "protocol": "psp",
+    "protocol": "pp",
     "port" : 8080,
     "number_of_thread": 4,
     "log" : "./gsky.log",
@@ -181,6 +188,7 @@ g++ -lgsky -lpthread main.cc
 
 ```
 ./gsky -c ../conf/gsky.conf
+
 ```
 
 若出现
@@ -193,13 +201,13 @@ gsky server port: 8080  number of thread: 4
 
 测试服务器
 
-由于服务器采用psp协议进行传输的，使用example/client.py进行测试，若想使用psp协议客户端，则访问https://github.com/pwnsky/psp下载相应的客户端psp协议库。
+由于服务器采用pp协议进行传输的，使用example/client.py进行测试，若想使用pp协议客户端，则访问https://github.com/pwnsky/pp下载相应的客户端pp协议库。
 
 ```
 ./client.py
 send...
 recv: 
-router: b'\x00\x00\x00\x00' length: 4
+route: b'\x00\x00\x00\x00' length: 4
 b'Keep'
 ```
 
@@ -217,3 +225,8 @@ i0gan
 
 
 
+开发日志:
+
+2021-06-30 开启gsky项目
+
+2021-07-01 修改psp协议名称为pp协议，增加对称加密传输，加密方采用 PE (Pwnsky Encryption) 加密。

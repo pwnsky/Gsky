@@ -1,4 +1,4 @@
-#include <gsky/util/md5.hh>
+#include <gsky/crypto/pmd5.hh>
 
 /* Constants for MD5Transform routine. */
 #define S11 7
@@ -55,8 +55,8 @@ Rotation is separate from addition to prevent recomputation.
 }
 
 
-const byte gsky::util::md5::PADDING[64] = { 0x80 };
-const char gsky::util::md5::HEX[16] = {
+const byte gsky::crypto::pmd5::PADDING[64] = { 0x80 };
+const char gsky::crypto::pmd5::HEX[16] = {
     '0', '1', '2', '3',
     '4', '5', '6', '7',
     '8', '9', 'A', 'B',
@@ -64,30 +64,30 @@ const char gsky::util::md5::HEX[16] = {
 };
 
 /* Default construct. */
-gsky::util::md5::md5() {
+gsky::crypto::pmd5::pmd5() {
 	reset();
 }
 
 /* Construct a MD5 object with a input buffer. */
-gsky::util::md5::md5(const void *input, size_t length) {
+gsky::crypto::pmd5::pmd5(const void *input, size_t length) {
 	reset();
 	update(input, length);
 }
 
 /* Construct a MD5 object with a string. */
-gsky::util::md5::md5(const std::string &str) {
+gsky::crypto::pmd5::pmd5(const std::string &str) {
 	reset();
 	update(str);
 }
 
 /* Construct a MD5 object with a file. */
-gsky::util::md5::md5(std::ifstream &in) {
+gsky::crypto::pmd5::pmd5(std::ifstream &in) {
 	reset();
 	update(in);
 }
 
 /* Return the message-digest */
-const byte* gsky::util::md5::digest() {
+const byte* gsky::crypto::pmd5::digest() {
 	if (!_finished) {
 		_finished = true;
 		final();
@@ -96,7 +96,7 @@ const byte* gsky::util::md5::digest() {
 }
 
 /* Reset the calculate state */
-void gsky::util::md5::reset() {
+void gsky::crypto::pmd5::reset() {
 
 	_finished = false;
 	/* reset number of bits. */
@@ -109,17 +109,17 @@ void gsky::util::md5::reset() {
 }
 
 /* Updating the context with a input buffer. */
-void gsky::util::md5::update(const void *input, size_t length) {
+void gsky::crypto::pmd5::update(const void *input, size_t length) {
 	update((const byte*)input, length);
 }
 
 /* Updating the context with a string. */
-void gsky::util::md5::update(const std::string &str) {
+void gsky::crypto::pmd5::update(const std::string &str) {
 	update((const byte*)str.c_str(), str.length());
 }
 
 /* Updating the context with a file. */
-void gsky::util::md5::update(std::ifstream &in) {
+void gsky::crypto::pmd5::update(std::ifstream &in) {
 
 	if (!in)
 		return;
@@ -138,7 +138,7 @@ void gsky::util::md5::update(std::ifstream &in) {
 operation, processing another message block, and updating the
 context.
 */
-void gsky::util::md5::update(const byte *input, size_t length) {
+void gsky::crypto::pmd5::update(const byte *input, size_t length) {
 
 	ulong i, index, partLen;
 
@@ -175,7 +175,7 @@ void gsky::util::md5::update(const byte *input, size_t length) {
 /* MD5 finalization. Ends an MD5 message-_digest operation, writing the
 the message _digest and zeroizing the context.
 */
-void gsky::util::md5::final() {
+void gsky::crypto::pmd5::final() {
 
 	byte bits[8];
 	ulong oldState[4];
@@ -206,7 +206,7 @@ void gsky::util::md5::final() {
 }
 
 /* MD5 basic transformation. Transforms _state based on block. */
-void gsky::util::md5::transform(const byte block[64]) {
+void gsky::crypto::pmd5::transform(const byte block[64]) {
 
 	ulong a = _state[0], b = _state[1], c = _state[2], d = _state[3], x[16];
 
@@ -293,7 +293,7 @@ void gsky::util::md5::transform(const byte block[64]) {
 /* Encodes input (ulong) into output (byte). Assumes length is
 a multiple of 4.
 */
-void gsky::util::md5::encode(const ulong *input, byte *output, size_t length) {
+void gsky::crypto::pmd5::encode(const ulong *input, byte *output, size_t length) {
 
 	for(size_t i=0, j=0; j<length; i++, j+=4) {
 		output[j]= (byte)(input[i] & 0xff);
@@ -306,7 +306,7 @@ void gsky::util::md5::encode(const ulong *input, byte *output, size_t length) {
 /* Decodes input (byte) into output (ulong). Assumes length is
 a multiple of 4.
 */
-void gsky::util::md5::decode(const byte *input, ulong *output, size_t length) {
+void gsky::crypto::pmd5::decode(const byte *input, ulong *output, size_t length) {
 
 	for(size_t i=0, j=0; j<length; i++, j+=4) {	
 		output[i] = ((ulong)input[j]) | (((ulong)input[j+1]) << 8) |
@@ -315,7 +315,7 @@ void gsky::util::md5::decode(const byte *input, ulong *output, size_t length) {
 }
 
 /* Convert byte array to hex string. */
-std::string gsky::util::md5::bytes_to_hex_string(const byte *input, size_t length) {
+std::string gsky::crypto::pmd5::bytes_to_hex_string(const byte *input, size_t length) {
     std::string str;
 	str.reserve(length << 1);
 	for(size_t i = 0; i < length; i++) {
@@ -329,11 +329,11 @@ std::string gsky::util::md5::bytes_to_hex_string(const byte *input, size_t lengt
 }
 
 /* Convert digest to string value */
-std::string gsky::util::md5::to_string() {
+std::string gsky::crypto::pmd5::to_string() {
     return bytes_to_hex_string(digest(), 16);
 }
 
-std::string gsky::util::md5::to_lower_case_string() {
+std::string gsky::crypto::pmd5::to_lower_case_string() {
     std::string str = bytes_to_hex_string(digest(), 16);
     for (size_t index = 0; index < str.size(); ++index) {
         str[index] = tolower(str[index]);

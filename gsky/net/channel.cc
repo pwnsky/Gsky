@@ -21,12 +21,12 @@ int gsky::net::channel::get_fd() {
     return fd_;
 }
 
-void gsky::net::channel::set_holder(sp_psp sph) {
-    holder_ = sph;
+void gsky::net::channel::set_holder(sp_pp_socket sock) {
+    holder_ = sock;
 }
 
-gsky::net::sp_psp gsky::net::channel::get_holder() {
-    sp_psp ret = holder_.lock();
+gsky::net::sp_pp_socket gsky::net::channel::get_holder() {
+    sp_pp_socket ret = holder_.lock();
     return ret;
 }
 
