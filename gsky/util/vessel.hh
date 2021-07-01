@@ -29,8 +29,10 @@ public:
     };
 
     void resize(size_t size) {
-        if(sub_ || size == 0) {
-            std::cout << "data subed or size is 0, can't resize\n";
+        if(sub_) {
+            std::cout << "data subed can't resize\n";
+            return;
+        }else if(size == 0) {
             return;
         }
 

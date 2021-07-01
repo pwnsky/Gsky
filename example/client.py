@@ -16,25 +16,47 @@ if(DEBUG == 1):
     sk.connect(('127.0.0.1', 8080))
 #else:
 #    sk.connect(('pwnsky.com', 4096))
+key = []
+
+def pp_connect():
+    p =  b'\x50\x50\x10\x00'
+    p +=  (0).to_bytes(4, byteorder='big', signed=False)
+    p += b'\x00' * 8
+    sk.send(p)
+    print(p)
+    key = pp_recv()
+    print('key: ')
+    print(key)
+
+
 def pp_send(d):
-    p =  b'PSP\x00'
-    p += b'\x00\x00\x00\x00'
+    p =  b'PP\x10\x00'
     p += (len(d) + 0).to_bytes(4, byteorder='big', signed=False)
-    #p += d
+    p += b'\x00' * 8
+    p += d
+    print(p)
     sk.send(p)
     sk.send(d)
 
 def pp_recv():
-    s = sk.recv(12);
-    length = int.from_bytes(s[8:12], byteorder='big', signed=False)
-    print('router: ' + str(s[4:8]) + ' length: ' + str(length))
+    s = sk.recv(16);
+    print('recv:')
+    print(s)
+    '''
+    status = s[2:3]
+    type_  = s[3:4]
+    length = int.from_bytes(s[4:8], byteorder='big', signed=False)
+    print('router: ' + str(s[8:16]) + ' length: ' + str(length) + ' status : 0x%02x' % ord(status))
+
     body = b'' 
     while True:
         if(len(body) >= length):
             break
         body += sk.recv(1)
     return body
-print('send...')
-pp_send(b'abc')
-print("recv: ")
-print(pp_recv())
+    '''
+    return 'a'
+
+print('pp connecting')
+pp_connect()
+

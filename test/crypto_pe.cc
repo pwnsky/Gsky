@@ -11,8 +11,8 @@ int main() {
     v << str;
 
     std::cout << "加密前: " << v.to_string();
-    p.encode(key, v);
+    p.encode(key, v.data(), v.size());
     std::cout << "加密后: " << v.to_string();
-    p.decode(key, v);
+    p.decode(key, v.data(), v.size());
     std::cout << "\n解密后: " << v.to_string();
 }

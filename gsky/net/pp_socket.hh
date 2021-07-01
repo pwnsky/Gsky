@@ -27,14 +27,12 @@ using logger = gsky::log::logger;
 class gsky::net::pp_socket final : public std::enable_shared_from_this<pp_socket> {
 public:
 
-enum class socket_status {
+enum class status {
     connected = 0,
     disconnecting,
     disconnected,
-};
 
-enum class pp_status {
-    parse_header = 0,
+    parse_header,
     recv_content,
     work,
     finish,
@@ -65,20 +63,21 @@ public:
 private:
     int fd_;
     std::string uid_ =  "none";
+    bool is_sended_key_ = false;
     eventloop *eventloop_;
     sp_channel sp_channel_;
     gsky::util::vessel in_buffer_;
     std::shared_ptr<gsky::util::vessel> out_buffer_ = nullptr;
     std::queue<std::shared_ptr<gsky::util::vessel>> out_buffer_queue_;
-    socket_status connection_status_;
-    pp_status process_status_;
+    status connection_status_;
+    status process_status_;
     int wait_event_count_ = 0; //用于计数等待事件的数量
     std::string client_ip_;
     std::string client_port_;
     std::shared_ptr<gsky::work::work> sp_work_;
-
+    unsigned char key_[8] = {0}; // 初始化为0
     std::map<std::string, std::string> map_client_info_;
-    gsky::net::pp_header header_;
+    gsky::net::pp::header header_;
     int  body_left_length_ = 0;
     void handle_read();
     void handle_write();
@@ -86,5 +85,6 @@ private:
     void handle_push_data_reset();
     void handle_work();
     void send_data(const std::string &content);
-    void handle_error();
+    void handle_error(pp::status s);
+    void send_key(); // 发送pe key给客户端
 };
