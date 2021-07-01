@@ -35,12 +35,8 @@ struct pp_header {
     unsigned short magic;    // "PP" 0x5050
     unsigned char status;    // The status code of client or server
     unsigned char type;      // The type of data
-    char route[8];           // The route of request
-    union {
-        char key[16];        // The key of PE (Pwnsky Encryption)
-        char token[16];      // The token of client
-    };
     unsigned int length;     // The length of data
+    char route[8];           // The route of request
 };
 
 }
