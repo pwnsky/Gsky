@@ -1,9 +1,7 @@
 #pragma once
-#include <memory>
 
+#include <memory>
 #include <gsky/gsky.hh>
-#include <gsky/net/eventloop.hh>
-//#include <gsky/net/pp/socket.cc>
 
 class gsky::net::socket final : public std::enable_shared_from_this<socket> {
 enum class status {
@@ -33,7 +31,7 @@ private:
     std::shared_ptr<gsky::util::vessel> out_buffer_ = nullptr;
     std::queue<std::shared_ptr<gsky::util::vessel>> out_buffer_queue_;
     int wait_event_count_ = 0; //用于计数等待事件的数量
-    //gsky::net::pp::socket pp_socket_;
+    std::shared_ptr<gsky::net::pp::socket> sp_pp_socket_;
     status status_;
     std::string ip_;
     std::string port_;

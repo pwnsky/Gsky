@@ -1,7 +1,4 @@
 #include <gsky/net/socket.hh>
-
-//#include <gsky/net/pp/socket.hh>
-
 #include <time.h>
 #include <stdlib.h>
 
@@ -12,12 +9,16 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 
+#include <gsky/net/pp/socket.hh>
+#include <gsky/net/eventloop.hh>
+
 const __uint32_t EPOLL_DEFAULT_EVENT = EPOLLIN | EPOLLET | EPOLLONESHOT;
 
 gsky::net::socket::socket(int fd, eventloop *elp) :
     fd_(fd),
     eventloop_(elp),
     sp_channel_(new channel(elp, fd)),
+    sp_pp_socket_(new gsky::net::pp::socket(fd)),
     status_(status::connected) {
 
     //sp_work_(new gsky::work::work(map_client_info_, in_buffer_)) {

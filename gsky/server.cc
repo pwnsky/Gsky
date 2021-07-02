@@ -11,6 +11,13 @@
 #include <sys/types.h>
 #include <sys/mman.h>
 
+#include <gsky/log/log_thread.hh>
+#include <gsky/log/log.hh>
+#include <gsky/util/util.hh>
+#include <gsky/util/firewall.hh>
+#include <gsky/net/net.hh>
+#include <gsky/net/eventloop.hh>
+
 extern gsky::log::log *gsky::data::p_log;
 extern std::string gsky::data::log_path;
 std::string gsky::data::config_path;
@@ -23,7 +30,8 @@ std::vector<std::string> gsky::data::forbid_ips;
 gsky::util::firewall *gsky::data::firewall = nullptr;
 
 gsky::server::server() :
-    sp_log_thread_(new gsky::log::log_thread) {
+    sp_log_thread_(new gsky::log::log_thread),
+    sp_net_(new gsky::net::net) {
 }
 
 gsky::server::~server() {
@@ -43,7 +51,7 @@ void gsky::server::set_config_path(std::string config_path) {
 }
 
 bool gsky::server::stop() {
-    net_.stop();
+    sp_net_->stop();
     sp_log_thread_->stop();
     return true;
 }
@@ -142,8 +150,8 @@ bool gsky::server::run_network_module() {
        return false;
     }
 
-    net_.init(port_, number_of_thread_);
-    net_.start();
+    sp_net_->init(port_, number_of_thread_);
+    sp_net_->start();
     return true;
 }
 

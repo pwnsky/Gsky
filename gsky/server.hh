@@ -1,12 +1,6 @@
 #pragma once
 
-#include <gsky/net/net.hh>
-#include <gsky/net/eventloop.hh>
 #include <gsky/gsky.hh>
-#include <gsky/log/log_thread.hh>
-#include <gsky/log/log.hh>
-#include <gsky/util/util.hh>
-#include <gsky/util/firewall.hh>
 
 using logger = gsky::log::logger;
 
@@ -31,5 +25,5 @@ private:
     int port_;
     std::string log_path_;
     std::shared_ptr<gsky::log::log_thread> sp_log_thread_;
-    gsky::net::net net_;
+    std::shared_ptr<gsky::net::net> sp_net_;
 };
