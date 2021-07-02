@@ -21,7 +21,8 @@ public:
     bool run_security_module();
     bool run_network_module();
     // Set server handler
-    void set_func_handler(gsky::work::server_handler h);
+    void set_pp_handler(gsky::net::pp::server_handler h);
+
     void set_config_path(std::string config_path);
 
 private:

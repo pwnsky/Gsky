@@ -13,7 +13,7 @@ gsky::net::epoll::~epoll() {
 void gsky::net::epoll::add(gsky::net::sp_channel sp_channel) {
     int fd = sp_channel->get_fd();
     struct epoll_event event;
-    sp_pp_sockets_[fd] = sp_channel->get_holder(); // 将sps对象由epoll管理
+    sp_sockets_[fd] = sp_channel->get_holder(); // 将sps对象由epoll管理
     event.data.fd = fd;
     event.events = sp_channel->get_event();
     sp_channel->update_last_evnet(); //update events
@@ -55,7 +55,7 @@ void gsky::net::epoll::del(sp_channel sp_channel) {
 #endif
     //释放内存
     sp_channels_[fd].reset();
-    sp_pp_sockets_[fd].reset();
+    sp_sockets_[fd].reset();
 }
 
 // 获取所有的Channel

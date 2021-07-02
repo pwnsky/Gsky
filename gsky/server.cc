@@ -15,7 +15,9 @@ extern gsky::log::log *gsky::data::p_log;
 extern std::string gsky::data::log_path;
 std::string gsky::data::config_path;
 std::string gsky::data::protocol;
-gsky::work::server_handler gsky::work::server_handler_;
+
+gsky::net::pp::server_handler gsky::net::pp::server_handler_;
+gsky::net::http::server_handler gsky::net::http::server_handler_;
 
 std::vector<std::string> gsky::data::forbid_ips;
 gsky::util::firewall *gsky::data::firewall = nullptr;
@@ -30,9 +32,10 @@ gsky::server::~server() {
     }
 }
 // Set server handler
-void gsky::server::set_func_handler(gsky::work::server_handler h) {
-    gsky::work::server_handler_ = h; 
+void gsky::server::set_pp_handler(gsky::net::pp::server_handler h) {
+    gsky::net::pp::server_handler_ = h; 
 }
+
 
 // Set server configure file path
 void gsky::server::set_config_path(std::string config_path) {

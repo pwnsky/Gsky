@@ -12,14 +12,13 @@
 
 #define UNUSED(var) do { (void)(var); } while (false)
 
-//extern std::string gsky::data::config_path;
-//
-std::string gsky::data::os_info;
-gsky::server server;
+using namespace gsky;
+
+server server; // 创建gsky服务
 
 void gsky_exit(int s) {
     UNUSED(s);
-    server.stop();
+    server.stop(); // 停止服务
 }
 
 void help() {
@@ -30,23 +29,23 @@ void help() {
                  ;
 }
 
-enum class RouterRoot {
+enum class RouteRoot {
     Keep = 0,
-    CheckUpdate,
+    CheckUpdate = 0x10,
     Login,
 };
 
 // 服务器回调函数, 函数格式为 void func(gsky::work::work *)
-void server_run(gsky::work::work *w) {
+void server_run(work::work *w) {
 
-    switch((RouterRoot)w->route_[0]) {
+    switch((RouteRoot)w->route_[0]) {
         case RouterRoot::Keep: {
             w->send_data("Keep");
         } break;
-        case RouterRoot::CheckUpdate: {
+        case RouteRoot::CheckUpdate: {
             std::cout << "checking updateing\n";
         } break;
-        case RouterRoot::Login: {
+        case RouteRoot::Login: {
             std::cout << "Login\n";
         } break;
         default: {
@@ -58,25 +57,26 @@ void server_run(gsky::work::work *w) {
 int main(int argc, char **argv) {
     ::signal(SIGINT, gsky_exit); // Ctrl + c 退出服务器
     int opt = 0;
-    gsky::data::config_path = DEFAULT_CONFIG_FILE;
+
+    // 获取参数
     while((opt = getopt(argc, argv,"h::v::a::c:"))!=-1) {
         switch (opt) {
-        case 'h': {
+        case 'h': { // 帮助
             help();
-            exit(0);
+            return 0;
         } break;
-        case 'c': {
+        case 'c': { 
             // 设置服务器配置文件路径
             server.set_config_path(optarg);
         } break;
         case 'v': {
             // 显示 gsky lib 的版本号
             std::cout << "gsky version: " << gsky::version() << '\n';
-            exit(0);
+            return 0;
         } break;
         default: {
             std::cout << "-h get more info" << std::endl;
-            exit(0);
+            return -1;
         }
         }
     }

@@ -1,37 +1,17 @@
 #pragma once
 #include <memory>
-#include <unordered_map>
 #include <map>
-#include <pthread.h>
-#include <sys/epoll.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <time.h>
 
 #include <gsky/gsky.hh>
-#include <gsky/net/eventloop.hh>
-#include <gsky/net/pp.hh>
-
+#include <gsky/net/pp/pp.hh>
+#include <gsky/net/pp/request.hh>
+#include <gsky/net/pp/response.hh>
 #include <gsky/util/vessel.hh>
-#include <gsky/log/log.hh>
-#include <gsky/util/firewall.hh>
-//#include <gsky/util/md5.hh>
-#include <gsky/util/util.hh>
-#include <gsky/work/work.hh>
 
-using logger = gsky::log::logger;
-
-// pp_socket (pwnsky protocl socket)
-class gsky::net::pp_socket final : public std::enable_shared_from_this<pp_socket> {
+// pp::socket (pwnsky protocl socket)
+class gsky::net::pp::socket {
 public:
-
 enum class status {
-    connected = 0,
-    disconnecting,
-    disconnected,
-
     parse_header,
     recv_content,
     work,
@@ -39,8 +19,8 @@ enum class status {
 };
 
 public:
-    explicit pp_socket(int fd,eventloop *elp);
-    ~pp_socket();
+    explicit socket(int fd);
+    ~socket();
     void reset();
     sp_channel get_sp_channel();
     eventloop *get_eventloop();
@@ -54,35 +34,28 @@ public:
             client_port_ = port;
     }
     void push_data(const std::string &data); // 数据推送
-    int is_deleteble() {
-        if(wait_event_count_ > 0)
-            return false;
-        return true;
-    }
     void response_error(int error_number, std::string message);
+    void handle_read();
 private:
     int fd_;
     std::string uid_ =  "none";
     bool is_sended_key_ = false;
-    eventloop *eventloop_;
-    sp_channel sp_channel_;
     gsky::util::vessel in_buffer_;
-    std::shared_ptr<gsky::util::vessel> out_buffer_ = nullptr;
-    std::queue<std::shared_ptr<gsky::util::vessel>> out_buffer_queue_;
-    status connection_status_;
-    status process_status_;
-    int wait_event_count_ = 0; //用于计数等待事件的数量
+
+    status status_;
+
     std::string client_ip_;
     std::string client_port_;
-    std::shared_ptr<gsky::work::work> sp_work_;
+
+    //gsky::net::pp::request request_;   // pp协议，request
+    //gsky::net::pp::response response_; // pp协议，response
+
+    gsky::net::pp::server_handler server_handler_; // 回调函数
+
     unsigned char key_[8] = {0}; // 初始化为0
     std::map<std::string, std::string> map_client_info_;
     gsky::net::pp::header header_;
     int  body_left_length_ = 0;
-    void handle_read();
-    void handle_write();
-    void handle_reset();
-    void handle_push_data_reset();
     void handle_work();
     void send_data(const std::string &content);
     void handle_error(pp::status s);

@@ -19,12 +19,11 @@
 #define EPOLL_MAX_EVENT_NUM   0x1000
 #define EPOLL_WAIT_TIME       0x1000
 #define MAX_BUF_SIZE          0x1000
-#define HTTP_MAX_NOT_FOUND_TIMES 25
 //#define MAX_HTTP_RECV_BUF_SIZE 0x4000
-//
-#define GSKY_VERSION "2.0"
+#define GSKY_VERSION "1.0"
 #define SERVER_NAME "gsky " GSKY_VERSION
-#define DEFAULT_CONFIG_FILE "/etc/gsky/gsky.conf"
+
+#define HTTP_MAX_NOT_FOUND_TIMES 25
 
 namespace gsky {
 
@@ -48,29 +47,33 @@ class channel;
 class eventloop;
 class eventloop_thread;
 class eventloop_threadpool;
+class socket;
 
-enum class PSPRecvState;
-enum class PSPConnectionState;
-enum class PSPResponseCode;
-
-class pp_socket;
-
-using sp_pp_socket = std::shared_ptr<gsky::net::pp_socket>;
+using sp_socket = std::shared_ptr<gsky::net::socket>;
 using sp_epoll = std::shared_ptr<gsky::net::epoll>;
 using sp_eventloop = std::shared_ptr<gsky::net::eventloop>;
 using sp_eventloop_thread = std::shared_ptr<gsky::net::eventloop_thread>;
 using sp_channel = std::shared_ptr<gsky::net::channel>;
-}
-// namespace net end
 
-// namespace work start
-namespace work {
-class work;
-typedef void (*server_handler)(gsky::work::work *);
+namespace pp { // pp协议
+class socket;
+class request;
+class response;
+typedef void (*server_handler)(gsky::net::pp::request *, gsky::net::pp::response *);
 extern server_handler server_handler_;
 }
 
-// namespace work end
+namespace http { // http 协议
+class socket;
+class request;
+class response;
+typedef void (*server_handler)(gsky::net::http::request *, gsky::net::http::response *);
+extern server_handler server_handler_;
+}
+
+}
+
+// namespace net end
 
 // namespace util start
 namespace util {
@@ -86,9 +89,8 @@ class color;
 class url;
 class firewall;
 }
-// namespace util end
-//
 
+// namespace util end
 
 // namespace crypto start
 namespace crypto {

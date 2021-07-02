@@ -1,4 +1,10 @@
 #include "net.hh"
+
+#include <gsky/net/util.hh>
+#include <gsky/net/socket.hh>
+#include <gsky/log/log.hh>
+#include <gsky/util/firewall.hh>
+
 extern gsky::util::firewall *gsky::data::firewall;
 
 gsky::net::net::net(int port,int number_of_thread) :
@@ -62,7 +68,7 @@ int gsky::net::net::listen() {
         return -1;
     }
     int listen_fd = -1;
-    if((listen_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+    if((listen_fd = ::socket(AF_INET, SOCK_STREAM, 0)) == -1) {
         perror("socket: ");
         return -1;
     }
@@ -118,10 +124,10 @@ void gsky::net::net::handle_new_connection() {
         // add event to deal with
         //d_cout << "handle new connection\n";
         eventloop *next_eventloop = up_eventloop_threadpool_->get_next_eventloop();
-        sp_pp_socket sph(new pp_socket(accept_fd, next_eventloop));
-        sph->set_client_info(client_ip, client_port);
-        sph->get_sp_channel()->set_holder(sph);
-        next_eventloop->push_back(std::bind(&pp_socket::new_evnet, sph));
+        sp_socket sps(new socket(accept_fd, next_eventloop));
+        sps->set_client_info(client_ip, client_port);
+        sps->get_sp_channel()->set_holder(sps);
+        next_eventloop->push_back(std::bind(&socket::new_evnet, sps));
     }
     accept_channel_->set_event(EPOLLIN | EPOLLET);
 }

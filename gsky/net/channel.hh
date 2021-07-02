@@ -6,9 +6,8 @@
 #include <sys/epoll.h>
 
 #include <gsky/net/eventloop.hh>
-#include <gsky/net/pp_socket.hh>
+#include <gsky/net/socket.hh>
 #include <gsky/gsky.hh>
-
 
 class gsky::net::channel {
 public:
@@ -17,8 +16,8 @@ public:
     ~channel();
     void set_fd(int fd);
     int get_fd();
-    gsky::net::sp_pp_socket get_holder();
-    void set_holder(sp_pp_socket pp_sk);
+    gsky::net::sp_socket get_holder();
+    void set_holder(sp_socket sock);
 
     void handle_read();
     void handle_write();
@@ -42,7 +41,7 @@ private:
     __uint32_t event_ = 0;
     __uint32_t revent_ = 0;
     __uint32_t last_event_ = 0;
-    std::weak_ptr<gsky::net::pp_socket> holder_;
+    std::weak_ptr<gsky::net::socket> holder_;
     gsky::util::callback read_handler_ = nullptr;
     gsky::util::callback write_handler_ = nullptr;
     gsky::util::callback error_handler_ = nullptr;

@@ -16,6 +16,7 @@ INSTALL_PATH := /usr/lib
 
 # gsky path
 NET_PATH    :=  ./gsky/net
+NET_PP_PATH :=  ./gsky/net/pp
 THREAD_PATH :=  ./gsky/thread
 WORK_PATH   :=  ./gsky/work
 LOG_PATH    :=  ./gsky/log
@@ -41,6 +42,11 @@ OBJS += $(UTIL_OBJ)
 NET_SRC := $(wildcard $(NET_PATH)/*.cc)  
 NET_OBJ := $(patsubst %.cc, %.o, $(NET_SRC)) 
 OBJS += $(NET_OBJ)
+
+# net
+NET_PP_SRC := $(wildcard $(NET_PP_PATH)/*.cc)  
+NET_PP_OBJ := $(patsubst %.cc, %.o, $(NET_PP_SRC)) 
+OBJS += $(NET_PP_OBJ)
 
 # thread
 THREAD_SRC := $(wildcard $(THREAD_PATH)/*.cc)  

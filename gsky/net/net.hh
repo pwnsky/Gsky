@@ -16,10 +16,6 @@
 #include <gsky/gsky.hh>
 #include <gsky/net/channel.hh>
 #include <gsky/net/eventloop_threadpool.hh>
-#include <gsky/net/util.hh>
-#include <gsky/net/pp_socket.hh>
-#include <gsky/log/log.hh>
-#include <gsky/util/firewall.hh>
 
 using logger = gsky::log::logger;
 
@@ -37,7 +33,6 @@ private:
     int listen();    // Bind port_ and listen
     bool started_;   // Store state of net if started
     bool listened_;  // Store state of net if listend
-    bool is_https_ = false;
     int port_;       // Listen port
     int number_of_thread_; // The number of thread
     eventloop *base_eventloop_ = nullptr;

@@ -24,5 +24,5 @@ private:
     int epoll_fd_;
     std::vector<epoll_event> v_events_;
     sp_channel sp_channels_[MAX_CONNECTED_FDS_NUM];
-    sp_pp_socket sp_pp_sockets_[MAX_CONNECTED_FDS_NUM];
+    sp_socket sp_sockets_[MAX_CONNECTED_FDS_NUM];
 };
