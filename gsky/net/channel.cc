@@ -1,5 +1,8 @@
 #include <gsky/net/channel.hh>
 
+#include <iostream>
+#include <sys/epoll.h>
+
 gsky::net::channel::channel(eventloop *elp) {
     elp_ = elp;
 }
@@ -21,12 +24,12 @@ int gsky::net::channel::get_fd() {
     return fd_;
 }
 
-void gsky::net::channel::set_holder(sp_socket sock) {
+void gsky::net::channel::set_holder(std::shared_ptr<gsky::net::socket> sock) {
     holder_ = sock;
 }
 
-gsky::net::sp_socket gsky::net::channel::get_holder() {
-    sp_socket ret = holder_.lock();
+std::shared_ptr<gsky::net::socket> gsky::net::channel::get_holder() {
+    std::shared_ptr<gsky::net::socket> ret = holder_.lock();
     return ret;
 }
 
@@ -90,20 +93,20 @@ void gsky::net::channel::set_event(__uint32_t event) {
     event_ = event;
 }
 
-void gsky::net::channel::set_read_handler(gsky::util::callback  &&read_handler) {
+void gsky::net::channel::set_read_handler(std::function<void()>  &&read_handler) {
     read_handler_ = read_handler;
 }
 
-void gsky::net::channel::set_write_handler(gsky::util::callback  &&write_handler) {
+void gsky::net::channel::set_write_handler(std::function<void()>  &&write_handler) {
     write_handler_ = write_handler;
 }
 
-void gsky::net::channel::set_error_handler(gsky::util::callback  &&error_handler) {
+void gsky::net::channel::set_error_handler(std::function<void()>  &&error_handler) {
     error_handler_ = error_handler;
 }
 
 // For deal with connected client event
-void gsky::net::channel::set_reset_handler(gsky::util::callback  &&reset_handler) {
+void gsky::net::channel::set_reset_handler(std::function<void()>  &&reset_handler) {
     reset_handler_ = reset_handler;
 }
 

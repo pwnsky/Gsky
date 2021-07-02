@@ -1,5 +1,6 @@
 #include <gsky/crypto/pmd5.hh>
 
+using namespace gsky::crypto;
 /* Constants for MD5Transform routine. */
 #define S11 7
 #define S12 12

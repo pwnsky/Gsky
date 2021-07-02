@@ -1,15 +1,14 @@
 #pragma once
 #include <functional>
-#include <unordered_map>
-#include <memory>
-#include <iostream>
-#include <sys/epoll.h>
-
+//#include <unordered_map>
+//#include <memory>
 #include <gsky/net/eventloop.hh>
 #include <gsky/net/socket.hh>
-#include <gsky/gsky.hh>
 
-class gsky::net::channel {
+//#include <gsky/gsky.hh>
+namespace gsky {
+namespace net {
+class channel {
 public:
     channel(eventloop *elp);
     channel(eventloop *elp, int fd);
@@ -26,10 +25,10 @@ public:
     void handle_error();
     void set_revent(__uint32_t revent);
     void set_event(__uint32_t event);
-    void set_read_handler (gsky::util::callback &&read_handler);
-    void set_write_handler(gsky::util::callback &&write_handler);
-    void set_error_handler(gsky::util::callback &&error_handler);
-    void set_reset_handler(gsky::util::callback &&reset_handler);
+    void set_read_handler (std::function<void()> &&read_handler);
+    void set_write_handler(std::function<void()> &&write_handler);
+    void set_error_handler(std::function<void()> &&error_handler);
+    void set_reset_handler(std::function<void()> &&reset_handler);
     __uint32_t &get_event();
     __uint32_t get_last_event();
     void update_last_evnet();
@@ -42,8 +41,11 @@ private:
     __uint32_t revent_ = 0;
     __uint32_t last_event_ = 0;
     std::weak_ptr<gsky::net::socket> holder_;
-    gsky::util::callback read_handler_ = nullptr;
-    gsky::util::callback write_handler_ = nullptr;
-    gsky::util::callback error_handler_ = nullptr;
-    gsky::util::callback reset_handler_ = nullptr;
+    std::function<void()> read_handler_ = nullptr;
+    std::function<void()> write_handler_ = nullptr;
+    std::function<void()> error_handler_ = nullptr;
+    std::function<void()> reset_handler_ = nullptr;
 };
+
+}
+}

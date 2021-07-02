@@ -41,7 +41,8 @@ struct header {
     unsigned char status;    // The status code of client or server
     unsigned char type;      // The type of data
     unsigned int length;     // The length of data
-    char route[8];           // The route of request
+    unsigned char route[6];           // The route of request
+    unsigned char code[2];           // The code for idendtify client's data
 };
 
 }

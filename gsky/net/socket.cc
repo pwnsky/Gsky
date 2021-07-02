@@ -1,7 +1,8 @@
 #include <gsky/net/socket.hh>
+
 #include <time.h>
 #include <stdlib.h>
-
+//#include <arpa/inet.h>
 #include <pthread.h>
 #include <sys/epoll.h>
 #include <sys/types.h>
@@ -29,6 +30,12 @@ gsky::net::socket::socket(int fd, eventloop *elp) :
     sp_channel_->set_read_handler(std::bind(&socket::handle_read, this));
     sp_channel_->set_write_handler(std::bind(&socket::handle_write, this));
     sp_channel_->set_reset_handler(std::bind(&socket::handle_reset, this));
+
+    sp_pp_socket_->set_send_data_handler(std::bind(&socket::send_data, this, std::placeholders::_1));
+    sp_pp_socket_->set_push_data_handler(std::bind(&socket::push_data, this, std::placeholders::_1));
+    sp_pp_socket_->set_disconnecting_handler(std::bind(&socket::set_disconnecting, this));
+    //sp_pp_socket->set_disconnected_handler(std::bind(&socket::push_data, this));
+
 }
 
 gsky::net::socket::~socket() {
@@ -50,9 +57,13 @@ void gsky::net::socket::set_disconnected() {
 }
 
 void gsky::net::socket::set_disconnecting() {
+#ifdef DEBUG
+    d_cout << "gsky::net::socket::set_disconnecting\n";
+#endif
     status_ = status::disconnecting;
 }
 
+// 关闭释放连接
 void gsky::net::socket::handle_close() {
 #ifdef DEBUG
     d_cout << "call gsky::net::socket::handle_close()\n";
@@ -76,6 +87,10 @@ gsky::net::eventloop *gsky::net::socket::get_eventloop() {
 
 // 接收数据回调
 void gsky::net::socket::handle_read() {
+
+    // 接收数据进行pp协议解析
+    sp_pp_socket_->handle_read();
+
     /*
     int len= sizeof(info);
     getsockopt(fd_, IPPROTO_TCP, TCP_INFO, &info, (socklen_t *)&len);
@@ -89,6 +104,7 @@ void gsky::net::socket::handle_read() {
 }
 
 
+// 写入数据函数，负责循环剩余数据或队列中的数据。
 void gsky::net::socket::handle_write() {
     __uint32_t &event = sp_channel_->get_event();
 
@@ -142,9 +158,10 @@ void gsky::net::socket::handle_reset() {
                && (event & EPOLLOUT)) {
         event = (EPOLLOUT | EPOLLET); // 再次回调，处理断开连接。
         status_ = status::disconnected;
-    } else {
+    } else { // disconnected
+
 #ifdef DEBUG
-        std::cout << client_ip_ << " disconnected " << std::endl;
+        std::cout << " disconnected " << std::endl;
 #endif
         // 异步处理关闭
         eventloop_->run_in_loop(std::bind(&socket::handle_close, shared_from_this()));
@@ -154,7 +171,6 @@ void gsky::net::socket::handle_reset() {
 /*
  * 发送数据: 采用同步方式进行数据发送
  * */
-
 void gsky::net::socket::send_data(std::shared_ptr<gsky::util::vessel> v) {
     out_buffer_queue_.push(v);
     handle_write();
@@ -167,7 +183,7 @@ void gsky::net::socket::send_data(std::shared_ptr<gsky::util::vessel> v) {
 void gsky::net::socket::push_data(std::shared_ptr<gsky::util::vessel> v) {
     out_buffer_queue_.push(v); // 将数据放入队列
     wait_event_count_ ++; // 计数++
-    // 用于异步回调 handle_push_data_reset函数
+    // 用于异步回调 handle_push_data_reset函数进行更新epoll事件
     eventloop_->run_in_loop(std::bind(&socket::handle_push_data_reset, shared_from_this()));
 }
 
@@ -181,8 +197,7 @@ void gsky::net::socket::handle_push_data_reset() {
 }
 
 void gsky::net::socket::set_client_info(const std::string &ip, const std::string &port) {
-    ip_ = ip;
-    port_ = port;
+    sp_pp_socket_->set_client_info(ip, port);
 }
 
 bool gsky::net::socket::is_deleteble() {

@@ -83,14 +83,14 @@ void gsky::net::eventloop::quit() {
         wake_up();
     }
 }
-void gsky::net::eventloop::run_in_loop(gsky::util::callback &&func) {
+void gsky::net::eventloop::run_in_loop(std::function<void()> &&func) {
     if(is_in_loop_thread())
         func();
     else
         push_back(std::move(func)); //加入待处理函数中
 }
 
-void gsky::net::eventloop::push_back(gsky::util::callback &&func) {
+void gsky::net::eventloop::push_back(std::function<void()> &&func) {
     gsky::thread::mutex_lock_guard mutex_lock_guard(mutex_lock_);
     pending_callback_functions_.emplace_back(std::move(func));
     if(!is_in_loop_thread() || calling_pending_callback_function_)
@@ -120,7 +120,7 @@ void gsky::net::eventloop::wake_up() {
 
 // 运行待运行的回调函数
 void gsky::net::eventloop::run_pending_callback_func() {
-    std::vector<gsky::util::callback> v_callback_functions;
+    std::vector<std::function<void()>> v_callback_functions;
     calling_pending_callback_function_ = true;
     gsky::thread::mutex_lock_guard mutex_lock_guard(mutex_lock_); // 保证线程单个线程执行
 
@@ -128,7 +128,7 @@ void gsky::net::eventloop::run_pending_callback_func() {
     v_callback_functions.swap(pending_callback_functions_); // 获取所有等待的毁掉函数
     // 依次运行回调函数
     for( size_t idx = 0; idx < v_callback_functions.size(); ++idx) {
-        gsky::util::callback func = v_callback_functions[idx];
+        std::function<void()> func = v_callback_functions[idx];
         if(func)
             func(); // 依次运行
     }

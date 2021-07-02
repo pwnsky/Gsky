@@ -9,8 +9,10 @@
 
 #include <gsky/net/channel.hh>
 #include <gsky/gsky.hh>
+namespace gsky {
+namespace net {
 
-class gsky::net::epoll {
+class epoll {
 public:
     epoll();
     ~epoll();
@@ -26,3 +28,6 @@ private:
     sp_channel sp_channels_[MAX_CONNECTED_FDS_NUM];
     sp_socket sp_sockets_[MAX_CONNECTED_FDS_NUM];
 };
+
+}
+}

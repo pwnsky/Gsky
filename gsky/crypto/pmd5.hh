@@ -3,14 +3,16 @@
 #include <string>
 #include <fstream>
 #include <cstring>
-#include <gsky/gsky.hh>
+
+namespace gsky {
+namespace crypto {
 
 /* Type define */
 typedef unsigned char byte;
 typedef unsigned long ulong;
 
 /* Pwnsky md5 declaration. */
-class gsky::crypto::pmd5 {
+class pmd5 {
 public:
 	pmd5();
 	pmd5(const void *input, size_t length);
@@ -45,3 +47,6 @@ private:
 	static const char HEX[16];
 	static const size_t BUFFER_SIZE = 1024;
 };
+
+}
+}

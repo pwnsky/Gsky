@@ -1,10 +1,28 @@
 ﻿#include <gsky/thread/thread.hh>
 
+#include <syscall.h>
+#include <sys/prctl.h>
+#include <cstdio>
+#include <unistd.h>
+
 __thread pid_t  gsky::thread::current_thread::tid = 0;
 __thread gsky::thread::current_thread::State gsky::thread::current_thread::state = current_thread::State::stopped;
 __thread char *gsky::thread::current_thread::name;
 
-gsky::thread::thread::thread(const gsky::util::callback &call_back, const std::string &name) :
+
+// 该函数用于获取该线程的一个id值, 该值是内核中独一无二的值, 主要用于辨别不同进程中不同的线程
+pid_t gsky::thread::current_thread::get_tid() {
+/* #define likely(x) __builtin_expect(!!(x), 1)   //x likely as true
+ * #define unlikely(x) __builtin_expect(!!(x), 0) //x likely as false
+ */
+    // 这个表示很有可能为假, 即在编译的时候告诉编译器, 若为假, 就不用跳转, 这是在汇编代码中体现的, 主要用于优化代码, 提高执行效率
+    if(__builtin_expect(current_thread::tid == 0, 0)) {
+        current_thread::tid = ::syscall(SYS_gettid);  //get real trhead id
+    }
+    return current_thread::tid;
+}
+
+gsky::thread::thread::thread(const std::function<void()> &call_back, const std::string &name) :
     started_(false),
     joined_(false),
     pthread_id(0),
@@ -64,7 +82,7 @@ bool gsky::thread::thread::is_started() {
 }
 
 // 用于创建线程传递参数
-gsky::thread::thread_data::thread_data(const gsky::util::callback &func, const std::string &name,
+gsky::thread::thread_data::thread_data(const std::function<void()> &func, const std::string &name,
                               pid_t *tid, count_down_latch *cdlp) :
     func_(func),
     name_(name),

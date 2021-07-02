@@ -1,13 +1,6 @@
 #pragma once
 #include <cstdlib>
 #include <string>
-#include <string.h>
-#include <sys/signal.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
 
 #include <gsky/gsky.hh>
 #include <gsky/util/vessel.hh>
@@ -29,5 +22,6 @@ void set_fd_nolinger(int fd);           //set fd no linger
 void shutdown_write_fd(int fd);         //shutdown fd of write
 void shutdown_read_fd(int fd);
 void shutdown_fd(int fd);
+
 }}}
 

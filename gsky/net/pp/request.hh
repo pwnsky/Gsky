@@ -3,27 +3,30 @@
 #include <map>
 #include <string>
 #include <unistd.h>
-
 #include <gsky/gsky.hh>
 #include <gsky/util/vessel.hh>
 
-class gsky::net::pp::request {
-    using json = gsky::util::json;
+namespace gsky{
+namespace net{
+namespace pp{
+
+class request {
 public:
-    explicit request(const std::map<std::string, std::string> &map_client_info,
+
+    explicit request(const std::map<std::string, std::string> &client_info,
                   gsky::util::vessel &content); // uid for deal with offline
-    ~request() {};
-    void set_route(char route[]) {
-        route_ = route;
-    }
-
-    char get_route(int index);
-    char *route_;
+    unsigned char get_route(int index);
+    void set_route(unsigned char route[]);
     gsky::util::vessel &content_;
-    std::string session_;
-    const std::map<std::string, std::string> &map_client_info_;
-    gsky::util::vessel *get_raw_content();
-    std::string get_content();
+    const std::map<std::string, std::string> &client_info_;
 
+    std::string session_;
+    std::string get_content();
+    gsky::util::vessel &get_raw_content();
 private:
+    unsigned char *route_;
 };
+
+}
+}
+}

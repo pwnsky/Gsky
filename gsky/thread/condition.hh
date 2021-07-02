@@ -3,11 +3,12 @@
 #include <time.h>
 #include <errno.h>
 
-#include <gsky/gsky.hh>
 #include <gsky/thread/noncopyable.hh>
 #include <gsky/thread/mutex_lock.hh>
+namespace gsky {
+namespace thread {
 
-class gsky::thread::condition : noncopyable {
+class condition : noncopyable {
   public:
     explicit condition(mutex_lock &ml) : mutex_(ml) {
         pthread_cond_init(&cond_, nullptr);
@@ -37,3 +38,4 @@ private:
     pthread_cond_t cond_ = PTHREAD_COND_INITIALIZER;
 };
 
+}}

@@ -2,7 +2,9 @@
 #include <gsky/thread/noncopyable.hh>
 #include <pthread.h>
 
-class gsky::thread::mutex_lock : noncopyable {
+namespace gsky {
+namespace thread {
+class mutex_lock : noncopyable {
 public:
     mutex_lock() {
         pthread_mutex_init(&mutex_, nullptr);
@@ -29,7 +31,7 @@ private:
     friend class Condition;
 };
 
-class gsky::thread::mutex_lock_guard : gsky::thread::noncopyable {
+class mutex_lock_guard : noncopyable {
 public:
     explicit mutex_lock_guard(gsky::thread::mutex_lock &mutex_lock) : mutex_lock_(mutex_lock){
         mutex_lock_.lock();
@@ -42,3 +44,4 @@ private:
     mutex_lock &mutex_lock_;
 };
 
+}}

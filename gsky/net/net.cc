@@ -5,6 +5,17 @@
 #include <gsky/log/log.hh>
 #include <gsky/util/firewall.hh>
 
+#include <unistd.h>
+#include <iostream>
+#include <cstdio>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <string>
+#include <errno.h>
+#include <cstring>
+
 extern gsky::util::firewall *gsky::data::firewall;
 
 gsky::net::net::net(int port,int number_of_thread) :

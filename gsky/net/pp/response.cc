@@ -16,13 +16,14 @@ gsky::net::pp::response::response() {
 gsky::net::pp::response::~response() {
 }
 
-void gsky::net::pp::response::set_send_data_handler(gsky::util::callback1 send_data_handler) {
+void gsky::net::pp::response::set_send_data_handler(std::function<void(const std::string &)> send_data_handler) {
     send_data_handler_ = send_data_handler;
 }
 
 void gsky::net::pp::response::send_data(const std::string &content) {
-    if(send_data_handler_)
+    if(send_data_handler_) {
         send_data_handler_(content);
+    }
 }
 
 void gsky::net::pp::response::send_json(json &json_obj) {

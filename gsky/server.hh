@@ -3,8 +3,8 @@
 #include <gsky/gsky.hh>
 
 using logger = gsky::log::logger;
-
-class gsky::server final{
+namespace gsky {
+class server final{
 public:
      server();
     ~server();
@@ -27,3 +27,4 @@ private:
     std::shared_ptr<gsky::log::log_thread> sp_log_thread_;
     std::shared_ptr<gsky::net::net> sp_net_;
 };
+}

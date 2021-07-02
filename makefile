@@ -98,3 +98,4 @@ install:
 uninstall:
 	@sudo $(RM) /usr/lib/libgsky.so
 	@sudo $(RM) /usr/include/gsky
+	@echo 'gsky lib has uninstalled'

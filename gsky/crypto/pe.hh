@@ -1,9 +1,9 @@
-#include <gsky/gsky.hh>
 #include <gsky/util/vessel.hh>
 
 #include <string>
-
-class gsky::crypto::pe {
+namespace gsky {
+namespace crypto {
+class pe {
 public:
     pe();
     ~pe();
@@ -31,3 +31,6 @@ public:
         0x20, 0x05, 0x0d, 0xa0, 0xcd, 0x82, 0xb3, 0x25, 0xd8, 0xd2, 0x20, 0xf3, 0xc5, 0x96, 0x35, 0x35, 
     };
 };
+
+}
+}

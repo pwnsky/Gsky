@@ -1,12 +1,13 @@
 #pragma once
 
-#include <gsky/gsky.hh>
 #include <gsky/net/eventloop.hh>
 #include <gsky/thread/thread.hh>
 #include <gsky/thread/mutex_lock.hh>
 #include <gsky/thread/condition.hh>
 
-class gsky::net::eventloop_thread {
+namespace gsky {
+namespace net {
+class eventloop_thread {
 public:
      explicit eventloop_thread();
     ~eventloop_thread();
@@ -25,3 +26,5 @@ private:
     void thread_func();
 };
 
+}
+}

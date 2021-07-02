@@ -10,6 +10,7 @@
 
 #include <gsky/util/json.hh>
 
+#define DEBUG
 //#define d_cout std::cout << "[" << __FILE__ << " line: " << __LINE__ << " thread id: " << std::hex <<  pthread_self() << std::oct << "] "
 #define d_cout std::cout << "[" << __FILE__ << " line: " << __LINE__ << "] "
 #define dbg_log(x) d_cout << x << std::endl
@@ -18,7 +19,7 @@
 #define MAX_CONNECTED_FDS_NUM 0x100000
 #define EPOLL_MAX_EVENT_NUM   0x1000
 #define EPOLL_WAIT_TIME       0x1000
-#define MAX_BUF_SIZE          0x1000
+
 //#define MAX_HTTP_RECV_BUF_SIZE 0x4000
 #define GSKY_VERSION "1.0"
 #define SERVER_NAME "gsky " GSKY_VERSION
@@ -59,7 +60,7 @@ namespace pp { // pp协议
 class socket;
 class request;
 class response;
-typedef void (*server_handler)(gsky::net::pp::request *, gsky::net::pp::response *);
+typedef void (*server_handler)(std::shared_ptr<gsky::net::pp::request> , std::shared_ptr<gsky::net::pp::response> );
 extern server_handler server_handler_;
 }
 
@@ -67,7 +68,7 @@ namespace http { // http 协议
 class socket;
 class request;
 class response;
-typedef void (*server_handler)(gsky::net::http::request *, gsky::net::http::response *);
+typedef void (*server_handler)(std::shared_ptr<gsky::net::http::request> , std::shared_ptr<gsky::net::http::response> );
 extern server_handler server_handler_;
 }
 
@@ -77,9 +78,10 @@ extern server_handler server_handler_;
 
 // namespace util start
 namespace util {
-using callback = std::function<void()>;
-using callback1 = std::function<void(const std::string &)>;
-using callback2 = std::function<void(const std::string &, const std::string &)>;
+//using std::function<void()> = std::function<void()>;
+//using std::function<void()>1 = std::function<void(const std::string &)>;
+//using std::function<void()>2 = std::function<void(const std::string &, const std::string &)>;
+
 class vessel;
 using json = nlohmann::json;
 std::string date_time();

@@ -11,7 +11,9 @@
 #include <sys/eventfd.h>
 #include <atomic>
 
-class gsky::net::eventloop {
+namespace gsky {
+namespace net {
+class eventloop {
 public:
     eventloop();
     void set_name(const std::string name) { name_ = name; };
@@ -20,8 +22,8 @@ public:
     int create_event_fd();
     void loop();
     void quit();
-    void run_in_loop(gsky::util::callback &&func);
-    void push_back(gsky::util::callback &&func);
+    void run_in_loop(std::function<void()> &&func);
+    void push_back(std::function<void()> &&func);
     bool is_in_loop_thread();              // 判断是否在事件循环的线程中
     void assert_in_loop_thread();          // 在线程中断言
     void shutdown(sp_channel spc);                        // 关闭fd的写端
@@ -38,7 +40,7 @@ private:
     sp_epoll sp_epoll_;
     sp_channel sp_awake_channel_;           // 用于唤醒的Channel
     mutable gsky::thread::mutex_lock mutex_lock_; // 互斥锁
-    std::vector<gsky::util::callback> pending_callback_functions_;
+    std::vector<std::function<void()>> pending_callback_functions_;
     bool calling_pending_callback_function_;
 
     void wake_up(); //for write one byte to client
@@ -46,3 +48,5 @@ private:
     void handle_read();
     void handle_reset();
 };
+
+}}

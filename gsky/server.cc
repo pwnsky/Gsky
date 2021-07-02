@@ -23,9 +23,6 @@ extern std::string gsky::data::log_path;
 std::string gsky::data::config_path;
 std::string gsky::data::protocol;
 
-gsky::net::pp::server_handler gsky::net::pp::server_handler_;
-gsky::net::http::server_handler gsky::net::http::server_handler_;
-
 std::vector<std::string> gsky::data::forbid_ips;
 gsky::util::firewall *gsky::data::firewall = nullptr;
 
@@ -95,6 +92,7 @@ bool gsky::server::run() {
 
 // Load config file
 bool gsky::server::load_config() {
+#define MAX_BUF_SIZE 0x1000
     std::string file_json;
     FILE* config_file_ptr = fopen(gsky::data::config_path.c_str(), "r");
     if(config_file_ptr == nullptr) {

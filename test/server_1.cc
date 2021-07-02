@@ -20,6 +20,7 @@ void gsky_exit(int s) {
     server.stop(); // 停止服务
 }
 
+
 int main(int argc, char **argv) {
     ::signal(SIGINT, gsky_exit); // Ctrl + c 退出服务器
     int opt = 0;

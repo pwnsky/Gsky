@@ -2,8 +2,10 @@
 
 #include <memory>
 #include <gsky/gsky.hh>
+namespace gsky {
+namespace net {
 
-class gsky::net::socket final : public std::enable_shared_from_this<socket> {
+class socket final : public std::enable_shared_from_this<socket> {
 enum class status {
     connected = 0,
     disconnecting,
@@ -33,10 +35,11 @@ private:
     int wait_event_count_ = 0; //用于计数等待事件的数量
     std::shared_ptr<gsky::net::pp::socket> sp_pp_socket_;
     status status_;
-    std::string ip_;
-    std::string port_;
     void handle_read();
     void handle_write();
     void handle_reset();
     void handle_push_data_reset();
 };
+
+}
+}

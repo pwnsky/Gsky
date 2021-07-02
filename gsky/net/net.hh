@@ -1,19 +1,6 @@
 #pragma once
-#include <unistd.h>
-#include <iostream>
-#include <cstdio>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <string>
-#include <errno.h>
-#include <cstring>
-#include <openssl/ssl.h>
-#include <openssl/err.h>
 
 
-#include <gsky/gsky.hh>
 #include <gsky/net/channel.hh>
 #include <gsky/net/eventloop_threadpool.hh>
 
