@@ -3,6 +3,7 @@
 #include <string>
 #include <pthread.h>
 #include <cassert>
+#include <functional>
 
 #include <gsky/thread/noncopyable.hh>
 #include <gsky/thread/count_down_latch.hh>

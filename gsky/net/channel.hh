@@ -2,12 +2,14 @@
 #include <functional>
 //#include <unordered_map>
 //#include <memory>
-#include <gsky/net/eventloop.hh>
+//#include <gsky/net/eventloop.hh>
 #include <gsky/net/socket.hh>
 
 //#include <gsky/gsky.hh>
 namespace gsky {
 namespace net {
+class eventloop;
+
 class channel {
 public:
     channel(eventloop *elp);
@@ -15,8 +17,8 @@ public:
     ~channel();
     void set_fd(int fd);
     int get_fd();
-    gsky::net::sp_socket get_holder();
-    void set_holder(sp_socket sock);
+    std::shared_ptr<socket> get_holder();
+    void set_holder(std::shared_ptr<socket> sock);
 
     void handle_read();
     void handle_write();

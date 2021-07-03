@@ -12592,7 +12592,7 @@ class binary_writer
     static CharType to_char_type(std::uint8_t x) noexcept
     {
         static_assert(sizeof(std::uint8_t) == sizeof(CharType), "size of CharType must be equal to std::uint8_t");
-        static_assert(std::is_pod<CharType>::value, "CharType must be POD");
+        //static_assert(std::is_pod<CharType>::value, "CharType must be POD");
         CharType result;
         std::memcpy(&result, &x, sizeof(x));
         return result;
@@ -22871,5 +22871,9 @@ inline nlohmann::json::json_pointer operator "" _json_pointer(const char* s, std
 #undef JSON_HEDLEY_WARN_UNUSED_RESULT
 
 
-
+namespace gsky {
+namespace util {
+using json = nlohmann::json;
+}
+}
 #endif  // INCLUDE_NLOHMANN_JSON_HPP_

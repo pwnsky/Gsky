@@ -58,7 +58,7 @@ void gsky::net::channel::handle_error() {
 
 void gsky::net::channel::handle_event() {
 #ifdef DEBUG
-    d_cout << "call gsky::net::channel::handle_event\n";
+    dlog << "call gsky::net::channel::handle_event\n";
 #endif
     event_ = 0; //处理后的事件清0
     if((revent_ & EPOLLHUP) && !(revent_ & EPOLLIN)) {

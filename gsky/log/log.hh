@@ -1,57 +1,65 @@
 #pragma once
 
-#include <gsky/util/util.hh>
-#include <gsky/thread/condition.hh>
-#include <gsky/gsky.hh>
+#include <string>
+#include <iostream>
 
-extern gsky::log::log *gsky::data::p_log;
-extern std::string gsky::data::log_path;
+#define dlog gsky::log::debug() << "[" << __FILE__ << ": " << __LINE__ << "] "
 
-#include <atomic>
-// handling in log eventloop thread
-class gsky::log::io {
+namespace gsky {
+namespace log {
+
+class color {
 public:
-    io();
-    ~io();
-    void close();
-    bool open(const std::string &log_path);
-    void write();
-    void push(const std::string &log);
-    void wait();
-private:
-    int log_fd_ = -1;
-    std::queue<std::string> logs_;
-    thread::mutex_lock write_mutex_lock_; //avoid call write at same time
+    static std::string red(const std::string &str);
+    static std::string green(const std::string &str);
+    static std::string yellow(const std::string &str);
+    static std::string blue(const std::string &str);
+    static std::string fuchsia(const std::string &str);
+    static std::string cyan(const std::string &str);
+    static std::string white(const std::string &str);
+    static std::string reset(const std::string &str);
 };
 
-class gsky::log::log {
-public:
-    log();
-    ~log();
-    void loop();
-    void quit();
-    void set_log_path(const std::string &log_path) {
-        log_path_ = log_path;
-    }
-    void push(const std::string &log) {
-        io_.push(log);
-        cond_.signal();
-    }
 
-private:
-    std::atomic<bool> quit_;
-    io io_;
-    std::string log_path_;
-    gsky::thread::mutex_lock log_wait_;
-    gsky::thread::condition cond_;
+class log_base {
+public:
+    log_base(std::string header);
+    virtual log_base &operator<<(const std::string &m);
+    virtual log_base &operator<<(char m);
+    virtual log_base &operator<<(unsigned char m);
+    virtual log_base &operator<<(short m);
+    virtual log_base &operator<<(unsigned short m);
+    virtual log_base &operator<<(int m);
+    virtual log_base &operator<<(unsigned int m);
+    virtual log_base &operator<<(long int m);
+    virtual log_base &operator<<(unsigned long int m);
+    //virtual log_base &operator<<(ssize_t m);
+    virtual log_base &operator<<(float m);
+    virtual log_base &operator<<(double m);
+//    virtual log_base &operator<<(char *m);
 };
 
-class gsky::log::logger {
+class info : public log_base {
 public:
-    void operator<< (const std::string &t) {
-        if(gsky::data::p_log)
-            gsky::data::p_log->push('\n' + gsky::util::date_time() + '\n' + t);
-    }
-private:
+    info();
+};
+
+class debug : public log_base {
+public:
+    debug();
+};
+
+
+class warning : public log_base {
+public:
+    warning();
+};
+
+class error : public log_base {
+public:
+    error();
 
 };
+
+}
+}

@@ -15,16 +15,15 @@ public:
 
     explicit request(const std::map<std::string, std::string> &client_info,
                   gsky::util::vessel &content); // uid for deal with offline
-    unsigned char get_route(int index);
-    void set_route(unsigned char route[]);
-    gsky::util::vessel &content_;
+    unsigned char route(int index);
     const std::map<std::string, std::string> &client_info_;
-
-    std::string session_;
-    std::string get_content();
-    gsky::util::vessel &get_raw_content();
+    std::string content();
+    gsky::util::vessel &raw_content();
+    void set_route(unsigned char route[]);
 private:
     unsigned char *route_;
+    std::string session_;
+    gsky::util::vessel &content_;
 };
 
 }

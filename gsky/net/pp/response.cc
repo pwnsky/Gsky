@@ -14,15 +14,26 @@ gsky::net::pp::response::response() {
 }
 
 gsky::net::pp::response::~response() {
+
 }
 
 void gsky::net::pp::response::set_send_data_handler(std::function<void(const std::string &)> send_data_handler) {
     send_data_handler_ = send_data_handler;
 }
 
+void gsky::net::pp::response::set_push_data_handler(std::function<void(const std::string &)> push_data_handler) {
+    push_data_handler_ = push_data_handler;
+}
+
 void gsky::net::pp::response::send_data(const std::string &content) {
     if(send_data_handler_) {
         send_data_handler_(content);
+    }
+}
+
+void gsky::net::pp::response::push_data(const std::string &content) {
+    if(push_data_handler_) {
+        push_data_handler_(content);
     }
 }
 

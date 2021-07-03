@@ -1,80 +1,127 @@
 #include <gsky/log/log.hh>
 
-#include <sstream>
-#include <queue>
-#include <string>
-#include <fcntl.h>
-#include <unistd.h>
-#include <time.h>
-#include <sys/time.h>
-#include <atomic>
-#include <sys/sem.h>
-#include <semaphore.h>
-
-gsky::log::log *gsky::data::p_log;
-std::string gsky::data::log_path;
-
-
-gsky::log::io::io(){
+std::string gsky::log::color::red(const std::string &str) {
+        std::string ret_str  = "\033[31m";
+        ret_str += str;
+        return ret_str;
 }
 
-gsky::log::io::~io() {
+std::string gsky::log::color::green(const std::string &str) {
+    std::string ret_str  = "\033[32m";
+    ret_str += str;
+    return ret_str;
 }
 
-bool gsky::log::io::open(const std::string &log_path) {
-    log_fd_ = ::open(log_path.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0755);
-    //std::cout << "log file: " << gsky::data::log_path.c_str() << '\n';
-    if(-1 == log_fd_) {
-        perror(("Open log file: " + log_path).c_str());
-        return false;
-    }
-    return true;
+std::string gsky::log::color::yellow(const std::string &str) {
+    std::string ret_str  = "\033[33m";
+    ret_str += str;
+    return ret_str;
 }
 
-void gsky::log::io::close() {
-    ::close(log_fd_);
+std::string gsky::log::color::blue(const std::string &str) {
+    std::string ret_str  = "\033[34m";
+    ret_str += str;
+    return ret_str;
 }
 
-void gsky::log::io::write() {
-    gsky::thread::mutex_lock_guard mutex_lock_guard(write_mutex_lock_);
-    if(logs_.size() > 0) {
-        std::string log = logs_.front();
-        logs_.pop();
-        ::write(log_fd_, log.data(), log.size());
-    }
+std::string gsky::log::color::fuchsia(const std::string &str) {
+    std::string ret_str  = "\033[35m";
+    ret_str += str;
+    return ret_str;
 }
 
-void gsky::log::io::push(const std::string &log) {
-    gsky::thread::mutex_lock_guard mutex_lock_guard(write_mutex_lock_);
-    logs_.push(log);
+std::string gsky::log::color::cyan(const std::string &str) {
+    std::string ret_str  = "\033[36m";
+    ret_str += str;
+    return ret_str;
+}
+
+std::string gsky::log::color::white(const std::string &str) {
+    std::string ret_str  = "\033[37m";
+    ret_str += str;
+    return ret_str;
+}
+
+std::string gsky::log::color::reset(const std::string &str) {
+    std::string ret_str  = "\033[0m";
+    ret_str += str;
+    return ret_str;
 }
 
 
-gsky::log::log::log() : quit_(false) ,
-    cond_(log_wait_){
-    quit_ = false;
+
+/*
+ * 打印日志思路: 采用log_base作为基础，在构造的时候实现头部打印，中途直接调用std::cout
+ * */
+
+gsky::log::log_base::log_base(std::string header){
+    std::cout << header;
 }
 
-gsky::log::log::~log() {
-
-}
-void gsky::log::log::loop() {
-    if(io_.open(log_path_) == false) {
-        quit_ = true;
-        cond_.broadcast();
-        exit(-1);
-        return;
-    }
-
-    while (!quit_) {
-        cond_.wait();
-        io_.write();
-    }
-    std::cout << "stop log module\n";
-    io_.close();
+gsky::log::log_base &gsky::log::log_base::operator<<(const std::string &m) {
+    std::cout << m;
+    return *this;
 }
 
-void gsky::log::log::quit() {
-    quit_ = true;
-    cond_.broadcast();
+gsky::log::log_base &gsky::log::log_base::operator<<(char m) {
+    std::cout << m;
+    return *this;
+}
+
+gsky::log::log_base &gsky::log::log_base::operator<<(unsigned char m) {
+    std::cout << m;
+    return *this;
+}
+
+gsky::log::log_base &gsky::log::log_base::operator<<(short m) {
+    std::cout << m;
+    return *this;
+}
+
+gsky::log::log_base &gsky::log::log_base::operator<<(unsigned short m) {
+    std::cout << m;
+    return *this;
+}
+
+gsky::log::log_base &gsky::log::log_base::operator<<(int m) {
+    std::cout << m;
+    return *this;
+}
+
+gsky::log::log_base &gsky::log::log_base::operator<<(unsigned int m) {
+    std::cout << m;
+    return *this;
+}
+
+
+gsky::log::log_base &gsky::log::log_base::operator<<(ssize_t m) {
+    std::cout << m;
+    return *this;
+}
+
+gsky::log::log_base &gsky::log::log_base::operator<<(size_t m) {
+    std::cout << m;
+    return *this;
+}
+
+gsky::log::log_base &gsky::log::log_base::operator<<(float m) {
+    std::cout << m;
+    return *this;
+}
+
+gsky::log::log_base &gsky::log::log_base::operator<<(double m) {
+    std::cout << m;
+    return *this;
+}
+
+gsky::log::info::info(): log_base("\033[32m[INFO*] \033[0m") {
+}
+
+gsky::log::debug::debug(): log_base("\033[35m[DEBUG*] \033[0m") {
+}
+
+gsky::log::warning::warning(): log_base("\033[33m[WARNING*] \033[0m") {
+}
+
+gsky::log::error::error(): log_base("\033[31m[ERROR*] \033[0m") {
 }

@@ -2,7 +2,7 @@
 
 #include <gsky/net/util.hh>
 #include <gsky/net/socket.hh>
-#include <gsky/log/log.hh>
+#include <gsky/log/logger.hh>
 #include <gsky/util/firewall.hh>
 
 #include <unistd.h>
@@ -16,7 +16,7 @@
 #include <errno.h>
 #include <cstring>
 
-extern gsky::util::firewall *gsky::data::firewall;
+using logger = gsky::log::logger;
 
 gsky::net::net::net(int port,int number_of_thread) :
     started_(false),
@@ -46,20 +46,18 @@ void gsky::net::net::init(int port, int number_of_thread) {
 void gsky::net::net::start() {
     listen_fd = listen();
     if(listen_fd == -1) {
-        d_cout << "net init fail\n";
-        logger() << "sys: net init fail\n";
+        error() << "net init fail\n";
         abort();
     }
     listened_ = true;
     util::ignore_sigpipe();
     if(!util::set_fd_nonblocking(listen_fd)) {
-        d_cout << "set fd nonblocking error\n";
-        logger() << "sys: set fd nonblocking error\n";
+        error() << "set fd nonblocking error\n";
         abort();
     }
     //base_eventloop_thread_ = sp_eventloop_thread(new eventloop_thread);
 
-    accept_channel_ = sp_channel(new channel(base_eventloop_));
+    accept_channel_ = std::shared_ptr<channel>(new channel(base_eventloop_));
     accept_channel_->set_fd(listen_fd);
     up_eventloop_threadpool_ = std::unique_ptr<eventloop_threadpool>(new eventloop_threadpool(base_eventloop_, number_of_thread_));
     up_eventloop_threadpool_->start();
@@ -74,8 +72,7 @@ void gsky::net::net::start() {
 
 int gsky::net::net::listen() {
     if(port_ < 0 || port_ > 65535) {
-        d_cout << "listen port is not right\n";
-        logger() << "listen port is not right\n";
+        error() << "listen port is not right\n";
         return -1;
     }
     int listen_fd = -1;
@@ -121,23 +118,25 @@ void gsky::net::net::handle_new_connection() {
         // If the number of accept fd is greater than MAX_CONNECTED_FDS_NUM wiil be closed
         std::string client_ip = inet_ntoa(client_sockaddr.sin_addr);
         std::string client_port = std::to_string(ntohs(client_sockaddr.sin_port));
+        /*
         if(gsky::data::firewall->wall(accept_fd, client_ip)) {
             //std::cout << "forbiden: " << ntohs(client_sockaddr.sin_port) << '\n';
             logger() << "FORBID IP: " + client_ip + ":" +  client_port;
             continue;
         }
+        */
         logger() << "-----------------------NEW CONNECTED CLIENT: " + client_ip + ":" + client_port + "------------------------";
         if(!util::set_fd_nonblocking(accept_fd)) {
-            d_cout << "set fd nonblocking error\n";
+            error() << "set fd nonblocking error\n";
         }
         //set as no delay
         util::set_fd_nodelay(accept_fd);
         // add event to deal with
         //d_cout << "handle new connection\n";
         eventloop *next_eventloop = up_eventloop_threadpool_->get_next_eventloop();
-        sp_socket sps(new socket(accept_fd, next_eventloop));
+        std::shared_ptr<socket> sps(new socket(accept_fd, next_eventloop));
         sps->set_client_info(client_ip, client_port);
-        sps->get_sp_channel()->set_holder(sps);
+        sps->get_channel()->set_holder(sps);
         next_eventloop->push_back(std::bind(&socket::new_evnet, sps));
     }
     accept_channel_->set_event(EPOLLIN | EPOLLET);

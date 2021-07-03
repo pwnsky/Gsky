@@ -4,9 +4,9 @@
 #include <gsky/net/channel.hh>
 #include <gsky/net/eventloop_threadpool.hh>
 
-using logger = gsky::log::logger;
-
-class gsky::net::net final{
+namespace gsky {
+namespace net {
+class net final{
 public:
     net();
     net(int port, int number_of_thread);
@@ -24,8 +24,10 @@ private:
     int number_of_thread_; // The number of thread
     eventloop *base_eventloop_ = nullptr;
     int listen_fd;
-    sp_channel accept_channel_;
+    std::shared_ptr<channel> accept_channel_;
     std::unique_ptr<eventloop_threadpool> up_eventloop_threadpool_;
     int accept_fd_sum = 0;
 };
 
+}
+}

@@ -12,6 +12,7 @@
 
 #include <gsky/net/pp/socket.hh>
 #include <gsky/net/eventloop.hh>
+#include <gsky/net/channel.hh>
 
 const __uint32_t EPOLL_DEFAULT_EVENT = EPOLLIN | EPOLLET | EPOLLONESHOT;
 
@@ -24,7 +25,7 @@ gsky::net::socket::socket(int fd, eventloop *elp) :
 
     //sp_work_(new gsky::work::work(map_client_info_, in_buffer_)) {
 #ifdef DEBUG
-    d_cout << "call gsky::net::socket::socket()\n";
+    dlog << "call gsky::net::socket::socket()\n";
 #endif
     //set callback function handler
     sp_channel_->set_read_handler(std::bind(&socket::handle_read, this));
@@ -40,7 +41,7 @@ gsky::net::socket::socket(int fd, eventloop *elp) :
 
 gsky::net::socket::~socket() {
 #ifdef DEBUG
-    d_cout << "call gsky::net::socket::~socket()\n";
+    dlog << "call gsky::net::socket::~socket()\n";
 #endif
     close(fd_);
     // delete all
@@ -58,7 +59,7 @@ void gsky::net::socket::set_disconnected() {
 
 void gsky::net::socket::set_disconnecting() {
 #ifdef DEBUG
-    d_cout << "gsky::net::socket::set_disconnecting\n";
+    dlog << "gsky::net::socket::set_disconnecting\n";
 #endif
     status_ = status::disconnecting;
 }
@@ -66,9 +67,9 @@ void gsky::net::socket::set_disconnecting() {
 // 关闭释放连接
 void gsky::net::socket::handle_close() {
 #ifdef DEBUG
-    d_cout << "call gsky::net::socket::handle_close()\n";
+    dlog << "call gsky::net::socket::handle_close()\n";
 #endif
-    sp_socket guard(shared_from_this()); // avoid delete
+    std::shared_ptr<socket> guard(shared_from_this()); // 计数+1，避免直接删除本身对象，从epoll中进行删除后再删除自己。
     eventloop_->remove_from_epoll(sp_channel_);
 }
 
@@ -77,7 +78,7 @@ void gsky::net::socket::new_evnet() {
     eventloop_->add_to_epoll(sp_channel_);
 }
 
-gsky::net::sp_channel gsky::net::socket::get_sp_channel() {
+std::shared_ptr<gsky::net::channel> gsky::net::socket::get_channel() {
     return sp_channel_;
 }
 
@@ -116,15 +117,17 @@ void gsky::net::socket::handle_write() {
     if(status_ == status::disconnected) {
         return;
     }
+
 #ifdef DEBUG
-    dbg_log("write size: " + std::to_string(out_buffer_->size()) + "] end");
+    dlog << "write size: " + std::to_string(out_buffer_->size()) << "\n";
 #endif
-    if(out_buffer_->size() > 0) {
+    if(out_buffer_->size() > 0) { // 保证out_buffer大于0
         if(util::write(fd_, out_buffer_) < 0) {
             perror("write header data");
             sp_channel_->set_event(0);
             //out_buffer_->clear();
         }
+
         if(out_buffer_->size() == 0) { // 数据发送完毕后，若out_buffer_queue_还存在待发送数据，则继续发送
             if(out_buffer_queue_.size() > 0)
                 out_buffer_queue_.pop();
@@ -161,7 +164,7 @@ void gsky::net::socket::handle_reset() {
     } else { // disconnected
 
 #ifdef DEBUG
-        std::cout << " disconnected " << std::endl;
+        dlog << " disconnected \n";
 #endif
         // 异步处理关闭
         eventloop_->run_in_loop(std::bind(&socket::handle_close, shared_from_this()));
@@ -181,6 +184,9 @@ void gsky::net::socket::send_data(std::shared_ptr<gsky::util::vessel> v) {
  * */
 
 void gsky::net::socket::push_data(std::shared_ptr<gsky::util::vessel> v) {
+#ifdef DEBUG
+        dlog << "gsky::net::socket::push_data \n";
+#endif
     out_buffer_queue_.push(v); // 将数据放入队列
     wait_event_count_ ++; // 计数++
     // 用于异步回调 handle_push_data_reset函数进行更新epoll事件

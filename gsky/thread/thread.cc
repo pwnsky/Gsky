@@ -4,6 +4,9 @@
 #include <sys/prctl.h>
 #include <cstdio>
 #include <unistd.h>
+#include <iostream>
+#include <gsky/log/log.hh>
+using namespace gsky::log;
 
 __thread pid_t  gsky::thread::current_thread::tid = 0;
 __thread gsky::thread::current_thread::State gsky::thread::current_thread::state = current_thread::State::stopped;
@@ -31,13 +34,13 @@ gsky::thread::thread::thread(const std::function<void()> &call_back, const std::
     name_(name),
     count_down_latch_(1) { // 等待机制, 单独一次开启一个开启线程, 就设置为1
 #ifdef DEBUG
-        dbg_log("gsky::thread::thread::thread()");
+        dlog << "gsky::thread::thread::thread()\n";
 #endif
 }
 
 gsky::thread::thread::~thread() {
 #ifdef DEBUG
-        dbg_log("gsky::thread::thread::~thread()");
+        dlog << "gsky::thread::thread::~thread()\n";
 #endif
     //std::cout << "~thread\n";
     if(started_ && !joined_)
@@ -55,7 +58,7 @@ void gsky::thread::thread::start() {
 
     if(pthread_create(&pthread_id, nullptr, &gsky::thread::thread::run, tdp)) {
         started_ = false;
-        std::cout << "create thread fail\n";
+        error() << "create thread fail\n";
         delete tdp;
     }else {
         count_down_latch_.wait();

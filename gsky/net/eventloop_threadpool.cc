@@ -6,7 +6,7 @@ gsky::net::eventloop_threadpool::eventloop_threadpool(eventloop *base_eventloop,
     number_of_thread_(number_of_thread),
     next_thread_indx_(0) {
     if(number_of_thread <= 0) {
-        d_cout << "The number of thread must be >= 1\n";
+        error() << "The number of thread must be >= 1\n";
         abort();
     }
 }
@@ -26,7 +26,7 @@ void gsky::net::eventloop_threadpool::start() {
     started_ = true;
     base_eventloop_->assert_in_loop_thread();
     for(int idx = 0; idx < number_of_thread_; ++idx) {
-        sp_eventloop_thread sp_elt(new eventloop_thread());
+        std::shared_ptr<eventloop_thread> sp_elt(new eventloop_thread());
         sp_elt->set_name("thread eventloop " + std::to_string(idx));
         sp_elt->start_loop();
         v_sp_eventloop_threads_.push_back(sp_elt);
@@ -36,7 +36,7 @@ void gsky::net::eventloop_threadpool::start() {
 void gsky::net::eventloop_threadpool::stop() {
     started_ = false;
     for(auto iter = v_sp_eventloop_threads_.begin(); iter != v_sp_eventloop_threads_.end(); ++iter) {
-        sp_eventloop_thread et = *iter;
+        std::shared_ptr<eventloop_thread> et = *iter;
         et->stop_loop();
     }
 }

@@ -4,12 +4,16 @@
 #include <string.h>
 #include <iostream>
 
+#include <gsky/log/log.hh>
+using namespace gsky::log;
+
+namespace gsky {
+namespace util {
+
 #define VESSEL_DEFAULT_SIZE  0x100
 #define VESSEL_DEFAULT_ALIGN 0x100
-#include "../gsky.hh"
 
-
-class gsky::util::vessel {
+class vessel {
 public:
     vessel() :
         sub_(false),
@@ -17,20 +21,20 @@ public:
         capacity_(align(VESSEL_DEFAULT_SIZE)),
         data_ptr_(static_cast<char*>(malloc(align(VESSEL_DEFAULT_SIZE)))) {
 #ifdef DEBUG
-        dbg_log("gsky::util::vessel::vessel()");
+        dlog << "gsky::util::vessel::vessel()\n";
 #endif
         data_start_ptr_ = data_ptr_;
     }
     ~vessel() {
 #ifdef DEBUG
-        d_cout << "gsky::util::vessel::~vessel()";
+        dlog << "gsky::util::vessel::~vessel()\n";
 #endif
         free(data_ptr_);
     };
 
     void resize(size_t size) {
         if(sub_) {
-            std::cout << "data subed can't resize\n";
+            error() << "data subed can't resize\n";
             return;
         }else if(size == 0) {
             return;
@@ -39,7 +43,7 @@ public:
         size_t align_size = align(size);
         void* ret_ptr = realloc(data_ptr_, align_size);
         if(ret_ptr == nullptr) {
-            std::cout << "data realloc, can't append\n";
+            error() << "data realloc, can't append\n";
             return;
         }
 
@@ -51,15 +55,14 @@ public:
     void operator<<(std::string data) {
         size_t size =  data.size();
         if(sub_ || size == 0) {
-            std::cout << "data subed, can't append\n";
+            error() << "data subed, can't append\n";
             return;
         }
         if((capacity_ - size_) < size) {
-            std::cout << "realloc\n";
            size_t align_size = align(capacity_ + size);
            void* ret_ptr = realloc(data_ptr_, align_size);
            if(ret_ptr == nullptr) {
-               std::cout << "data realloc, can't append\n";
+               error() << "data realloc, can't append\n";
                return;
            }
            data_ptr_ = static_cast<char *>(ret_ptr);
@@ -73,14 +76,14 @@ public:
     void operator<<(const char *data) {
         size_t size =  strlen(data);
         if(sub_ || size == 0) {
-            std::cout << "data subed, can't append\n";
+            error() << "data subed, can't append\n";
             return;
         }
         if((capacity_ - size_) < size) {
            size_t align_size = align(capacity_ + size);
            void* ret_ptr = realloc(data_ptr_, align_size);
            if(ret_ptr == nullptr) {
-               std::cout << "data realloc, can't append\n";
+               error() << "data realloc, can't append\n";
                return;;
            }
            data_ptr_ = static_cast<char *>(ret_ptr);
@@ -93,14 +96,14 @@ public:
     void append(void *data, size_t length) {
         size_t size = length;
         if(sub_ || size == 0) {
-            std::cout << "data subed, can't append\n";
+            error() << "data subed, can't append\n";
             return;
         }
         if((capacity_ - size_) < size) {
            size_t align_size = align(capacity_ + size);
            void* ret_ptr = realloc(data_ptr_, align_size);
            if(ret_ptr == nullptr) {
-               std::cout << "data realloc, can't append\n";
+               error() << "data realloc, can't append\n";
                return;;
            }
            data_ptr_ = static_cast<char *>(ret_ptr);
@@ -114,7 +117,7 @@ public:
     void sub(size_t size) {
         sub_ = true;
         if(size_ < size) {
-            std::cout << "sub data : out of range\n";
+            error() << "sub data : out of range\n";
             size_ = 0;
         }else
             size_ -= size;
@@ -217,3 +220,6 @@ private:
         return  (n + 1) * VESSEL_DEFAULT_ALIGN;
     }
 };
+
+}
+}

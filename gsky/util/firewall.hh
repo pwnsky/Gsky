@@ -2,8 +2,11 @@
 #include <gsky/gsky.hh>
 #include <sys/socket.h>
 #include <vector>
+#include <string>
+namespace gsky {
 
-class gsky::util::firewall {
+namespace util {
+class firewall {
 public:
     firewall() {}
     ~firewall() {}
@@ -19,3 +22,6 @@ public:
 private:
     std::vector<std::string> forbid_ips_;
 };
+
+}
+}

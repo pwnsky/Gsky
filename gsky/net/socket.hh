@@ -1,9 +1,15 @@
 #pragma once
 
 #include <memory>
-#include <gsky/gsky.hh>
+#include <cassert>
+#include <queue>
+#include <gsky/net/pp/socket.hh>
+#include <gsky/log/log.hh>
+
 namespace gsky {
 namespace net {
+class channel;
+class eventloop;
 
 class socket final : public std::enable_shared_from_this<socket> {
 enum class status {
@@ -15,7 +21,7 @@ public:
     explicit socket(int fd, eventloop *elp);
     ~socket();
     void reset();
-    sp_channel get_sp_channel();
+    std::shared_ptr<gsky::net::channel> get_channel();
     eventloop *get_eventloop();
     void handle_close();
     void new_evnet();
@@ -29,7 +35,7 @@ public:
 private:
     int fd_;
     eventloop *eventloop_;
-    sp_channel sp_channel_;
+    std::shared_ptr<gsky::net::channel> sp_channel_;
     std::shared_ptr<gsky::util::vessel> out_buffer_ = nullptr;
     std::queue<std::shared_ptr<gsky::util::vessel>> out_buffer_queue_;
     int wait_event_count_ = 0; //用于计数等待事件的数量

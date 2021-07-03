@@ -3,23 +3,26 @@
 #include <gsky/thread/thread.hh>
 #include <gsky/thread/mutex_lock.hh>
 #include <gsky/thread/condition.hh>
-#include <gsky/log/log.hh>
+#include <gsky/log/logger.hh>
 
-class gsky::log::log_thread {
+namespace gsky{
+namespace log {
+class logger_thread {
 public:
-    log_thread();
-    ~log_thread();
-    log *creat();
+    logger_thread();
+    ~logger_thread();
+    bool creat();
     void stop();
-    void set_log_path(const std::string &log_path) {
-        log_path_ = log_path;
-    }
+    void set_logger_path(const std::string &logger_path);
 private:
-    log *log_;
+    gsky::log::logger_manager *logger_manager_ = nullptr;
     bool exiting_;
     gsky::thread::thread thread_;
     gsky::thread::mutex_lock mutex_lock_;
     gsky::thread::condition condition_;
     void thread_func();
-    std::string log_path_;
+    std::string logger_path_;
 };
+
+}
+}

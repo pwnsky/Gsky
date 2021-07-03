@@ -5,20 +5,17 @@
 #include <iostream>
 #include <signal.h>
 #include <unistd.h>
-
-#include <gsky/gsky.hh>
 #include <gsky/server.hh>
-#include <gsky/work/work.hh>
 
 #define UNUSED(var) do { (void)(var); } while (false)
 
 using namespace gsky;
 
-server server; // 创建gsky服务
+server ser; // 创建服务器
 
 void gsky_exit(int s) {
     UNUSED(s);
-    server.stop(); // 停止服务
+    ser.stop(); // 停止服务
 }
 
 void help() {
@@ -32,14 +29,15 @@ void help() {
 enum class RouteRoot {
     Keep = 0,
     CheckUpdate = 0x10,
-    Login,
+    Login = 0x11,
+    Echo = 0x20,
 };
 
-// 服务器回调函数, 函数格式为 void func(gsky::work::work *)
-void server_run(work::work *w) {
-
-    switch((RouteRoot)w->route_[0]) {
-        case RouterRoot::Keep: {
+// 服务器回调函数, 函数格式为 void func(sp_request r, sp_response w)
+void server_run(net::pp::sp_request r, net::pp::sp_response w) {
+    log::info() << "收到数据: " << r->content() << '\n';
+    switch((RouteRoot)r->route(0)) {
+        case RouteRoot::Keep: {
             w->send_data("Keep");
         } break;
         case RouteRoot::CheckUpdate: {
@@ -48,8 +46,14 @@ void server_run(work::work *w) {
         case RouteRoot::Login: {
             std::cout << "Login\n";
         } break;
+        case RouteRoot::Echo: {
+            std::cout << "Echo\n";
+            w->push_data("Push data 1 to you: " + r->content());
+            w->push_data("Push data 2 to you: abc");
+        } break;
         default: {
-            w->send_data(w->content_.to_string());
+            std::cout << "Error\n";
+            w->send_data("ERROR");
         } break;
     }
 }
@@ -67,7 +71,7 @@ int main(int argc, char **argv) {
         } break;
         case 'c': { 
             // 设置服务器配置文件路径
-            server.set_config_path(optarg);
+            ser.set_config_path(optarg);
         } break;
         case 'v': {
             // 显示 gsky lib 的版本号
@@ -82,8 +86,7 @@ int main(int argc, char **argv) {
     }
 
     // 设置服务器回调函数
-    server.set_func_handler(server_run);
-    server.run(); // 启动gsky服务器
-    std::cout << "\033[40;33mgsky quited! \n\033[0m";
+    ser.set_pp_server_handler(server_run);
+    ser.run(); // 启动gsky服务器
     return 0;
 }

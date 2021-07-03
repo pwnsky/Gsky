@@ -1,11 +1,9 @@
 #! /usr/bin/python
 import socket
-import _thread
 import json
 from time import *
 import time
-#from Crypto.Util.number import bytes_to_long
-from pwn import *
+
 PEXorTable = [
         0xbe, 0xd1, 0x90, 0x88, 0x57, 0x00, 0xe9, 0x53, 0x10, 0xbd, 0x2a, 0x34, 0x51, 0x84, 0x07, 0xc4, 
         0x33, 0xc5, 0x3b, 0x53, 0x5f, 0xa8, 0x5d, 0x4b, 0x6d, 0x22, 0x63, 0x5d, 0x3c, 0xbd, 0x47, 0x6d, 
@@ -42,7 +40,7 @@ def PE_Encode(keys, data):
         data[i] ^= keys[i % 8]
         n = ((keys[i % 8] + keys[(i + 1) % 8]) * keys[(i + 2) % 8]) & 0xff
         data[i] ^= n ^ PEXorTable[n]
-        keys[i % 8] = (n * 2 + 3) % 0x100
+        keys[i % 8] = (n * 2 + 3) & 0xff
 
     out = b''
     for c in data:
@@ -81,7 +79,9 @@ if(DEBUG == 1):
     sk.connect(('127.0.0.1', 8080))
 #else:
 #    sk.connect(('pwnsky.com', 4096))
-key = b''
+key = b'\x00' * 8
+code = b''
+
 def pp_connect():
     global key
     p =  b'\x50\x50\x10\x00'
@@ -89,38 +89,61 @@ def pp_connect():
     p += b'\x00' * 8
     sk.send(p)
     print('request get key: ', end='')
-    key = pp_recv()
-    key = PE_Decode(b'\x00' * 8, key)
-    print(b'key : ' + key)
+    (status, data) = pp_recv()
+    if(status == 0x31 and key == b'\x00' * 8): # 状态代码为0x31为服务端发送key
+        key = data
+    #print(b'key : ' + key)
+    #print(b'code : ' + code)
 
-def pp_send(d):
-    p =  b'PP\x11\x00'
+def pp_send(d, route):
+    p =  b'\x50\x50\x11\x00'
     p += (len(d) + 0).to_bytes(4, byteorder='big', signed=False)
-    p += b'\x00' * 8
-    p += d
-    sk.send(p)
-    sk.send(PE_Encode(key, p))
+    route = route.ljust(6, b'\x00')
+    sk.send(p + PE_Encode(key, route + code))
+    sk.send(PE_Encode(key, d))
+    print(b'key: ' + key)
+    print(b'code: ' + code)
 
 def pp_recv():
-    s = sk.recv(16);
+    global code, key
+    s = sk.recv(8);
     status = s[2:3]
     type_  = s[3:4]
     length = int.from_bytes(s[4:8], byteorder='big', signed=False)
-    print('router: ' + str(s[8:16]) + ' length: ' + str(length) + ' status : 0x%02x' % ord(status))
 
+    s = sk.recv(8) # 接收剩余头部
+    s = PE_Decode(key, s)
+
+    print('route: ' + str(s[0:6]) + ' length: ' + str(length) + ' status : 0x%02x' % ord(status))
+    print('code: ' + str(s[6:8]))
+    if(code == b''):
+        code = s[6:8]
     body = b'' 
     while True:
         if(len(body) >= length):
             break
         body += sk.recv(1)
-    return body
-    return body
-
+    body = PE_Decode(key, body)
+    return (ord(status), body)
 
 print('pp connecting')
 pp_connect()
-pp_send(b'hello pp!')
-d = pp_recv()
-print(b'recv: ' + d)
+pp_send(b'hello pp!', b'\x30')
+(status, d) = pp_recv()
+if(status == 0x30): # 状态代码为OK
+    print(b'recv: ' + d)
+
+pp_send(b'Yeah you are online!', b'\x20')
+(status, d) = pp_recv()
+if(status == 0x30): # 状态代码为OK
+    print(b'recv: ' + d)
+
+print(sk.recv(16))
+'''
+(status, d) = pp_recv()
+if(status == 0x30): # 状态代码为OK
+    print('recved data again')
+    print(b'recv: ' + d)
+'''
 
 sk.close()

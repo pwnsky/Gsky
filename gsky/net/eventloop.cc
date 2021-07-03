@@ -20,7 +20,7 @@ void gsky::net::eventloop::handle_read() {
     char buf[8];
     ssize_t read_len = gsky::net::util::read(awake_fd_, &buf, sizeof(buf));
     if(read_len != sizeof (buf)) {
-        std::cout << "eventloop::hand_read() reads " << read_len << "instead of 8\n";
+        warning() << "eventloop::hand_read() reads " << read_len << "instead of 8";
     }
 }
 
@@ -28,11 +28,11 @@ void gsky::net::eventloop::handle_reset() {
     sp_awake_channel_->set_event(EPOLLIN | EPOLLET);
 }
 
-void gsky::net::eventloop::update_epoll(sp_channel spc) {
+void gsky::net::eventloop::update_epoll(std::shared_ptr<channel> spc) {
     sp_epoll_->mod(spc);
 }
 
-void gsky::net::eventloop::add_to_epoll(sp_channel spc) {
+void gsky::net::eventloop::add_to_epoll(std::shared_ptr<channel> spc) {
     sp_epoll_->add(spc);
 }
 
@@ -56,19 +56,19 @@ void gsky::net::eventloop::loop() {
     assert(is_in_loop_thread());
     looping_ = true;
     quit_ = false;
-    std::vector<sp_channel> v_sp_event_channels;
+    std::vector<std::shared_ptr<channel>> v_sp_event_channels;
     while(!quit_) {
 #ifdef DEBUG
-        d_cout << "event looping!\n";
+        debug() << "event looping!\n";
 #endif
         v_sp_event_channels.clear();
         v_sp_event_channels = sp_epoll_->get_all_event_channels(); // get all unhandle events
         event_handling_ = true;
-        for (auto &sp_channel : v_sp_event_channels) {
-            if(sp_channel)
-                sp_channel->handle_event(); // handle event
+        for (auto &spc : v_sp_event_channels) {
+            if(spc)
+                spc->handle_event(); // handle event
 #ifdef DEBUG
-        d_cout << "call handle_event\n";
+        debug() << "call handle_event\n";
 #endif
         }
         event_handling_  = false;
@@ -83,6 +83,8 @@ void gsky::net::eventloop::quit() {
         wake_up();
     }
 }
+
+// 增加异步调用函数
 void gsky::net::eventloop::run_in_loop(std::function<void()> &&func) {
     if(is_in_loop_thread())
         func();
@@ -105,8 +107,8 @@ bool gsky::net::eventloop::is_in_loop_thread() {
 }
 
 // 从epoll中移除事件
-void gsky::net::eventloop::remove_from_epoll(sp_channel sp_channel) {
-    sp_epoll_->del(sp_channel);
+void gsky::net::eventloop::remove_from_epoll(std::shared_ptr<channel> spc) {
+    sp_epoll_->del(spc);
 }
 
 // 用于保持长连接避免断开连接
@@ -114,7 +116,7 @@ void gsky::net::eventloop::wake_up() {
     char buf[8];
     ssize_t write_len = gsky::net::util::write(awake_fd_, buf, sizeof (buf));
     if(write_len != sizeof (buf)) {
-        d_cout << "eventloop::wakeup write:" << write_len << " instead of 8\n";
+        debug() << "eventloop::wakeup write:" << write_len << " instead of 8";
     }
 }
 
@@ -139,6 +141,6 @@ void gsky::net::eventloop::assert_in_loop_thread() {
     assert(is_in_loop_thread());
 }
 
-void gsky::net::eventloop::shutdown(sp_channel spc) {
+void gsky::net::eventloop::shutdown(std::shared_ptr<channel> spc) {
     gsky::net::util::shutdown_write_fd(spc->get_fd());
 }

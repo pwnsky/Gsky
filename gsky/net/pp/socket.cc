@@ -5,10 +5,11 @@
 #include <arpa/inet.h>
 
 #include <gsky/crypto/pe.hh>
-#include <gsky/log/log.hh>
+#include <gsky/log/logger.hh>
 #include <gsky/net/util.hh>
 #include <gsky/util/firewall.hh>
 #include <gsky/util/util.hh>
+
 /*
  * 加密：
  * 数据加密采用 Pwnsky Encryption进行加密，客户端在初始连接的时候先请求密钥，服务端发送8字节随机密钥用于本次连接，
@@ -25,22 +26,23 @@ gsky::net::pp::socket::socket(int fd) :
     response_(new gsky::net::pp::response()) {
 
 #ifdef DEBUG
-    d_cout << "call gsky::net::pp::socket::socket()\n";
+    dlog << "call gsky::net::pp::socket::socket()\n";
 #endif
     //set std::function<void()> function handler
-    //response_.set_send_data_handler(std::bind(&pp::socket::send_data, this, std::placeholders::_1));
-    //request_.set_route(header_.route);
+    response_->set_send_data_handler(std::bind(&pp::socket::send_data, this, std::placeholders::_1));
+    response_->set_push_data_handler(std::bind(&pp::socket::push_data, this, std::placeholders::_1));
+    request_->set_route(header_.route);
 }
 
 gsky::net::pp::socket::~socket() {
 #ifdef DEBUG
-    d_cout << "call gsky::net::pp::socket::~socket()\n";
+    dlog << "call gsky::net::pp::socket::~socket()\n";
 #endif
 }
 
 void gsky::net::pp::socket::reset() {
 #ifdef DEBUG
-    d_cout << "gsky::net::pp::socket::reset()\n";
+    dlog << "gsky::net::pp::socket::reset()\n";
 #endif
 
     status_ = status::parse_header;
@@ -49,7 +51,7 @@ void gsky::net::pp::socket::reset() {
 
 void gsky::net::pp::socket::handle_close() {
 #ifdef DEBUG
-    d_cout << "call gsky::net::pp::socket::handle_close()\n";
+    dlog << "call gsky::net::pp::socket::handle_close()\n";
 #endif
 }
 
@@ -69,17 +71,19 @@ void gsky::net::pp::socket::set_disconnecting_handler(std::function<void()> func
 // 接收数据回调
 void gsky::net::pp::socket::handle_read() {
 #ifdef DEBUG
-                d_cout << "gsky::net::pp::socket::handle_read()" << std::endl;
+                dlog << "gsky::net::pp::socket::handle_read()\n";
 #endif
     do {
         if(status_ == status::parse_header) {
             int read_len = gsky::net::util::read(fd_, (void*)&header_, sizeof(pp::header)); // read data
             if(read_len == 0) {
 #ifdef DEBUG
-                d_cout << "is_disconnected 1" << std::endl;
+                dlog << "is_disconnected 1\n";
 #endif
                 handle_disconnect();
                 break;
+            }else if(read_len < 0) {
+                break; // 重新接收
             }
 
             if(read_len != sizeof(pp::header)  || header_.magic != 0x5050) {
@@ -104,9 +108,9 @@ void gsky::net::pp::socket::handle_read() {
 
             //logger() << "read data from " + client_ip_ + ":" + client_port_;
 #ifdef DEBUG
-            std::cout << "read: size: " << read_len << " migic: " << header_.magic << " length: " << body_left_length_ << std::endl;
+            info() << "read: size: " << read_len << " migic: " << header_.magic << " length: " << body_left_length_ << "\n";
             printf("router: ");
-            for(int i = 0; i < 8; i ++) {
+            for(int i = 0; i < 6; i ++) {
                 printf(" %02X", header_.route[i]);
             }
             printf("\n");
@@ -123,17 +127,20 @@ void gsky::net::pp::socket::handle_read() {
             int read_len = gsky::net::util::read(fd_, in_buffer_, body_left_length_);
             if(read_len == 0 && header_.length != 0) {
 #ifdef DEBUG
-                d_cout << "is_disconnected 2" << std::endl;
+                dlog << "is_disconnected 2\n";
 #endif
                 handle_disconnect();
                 break;
+            }else if(read_len < 0) {
+                break; // 重新接收
             }
+
             body_left_length_ -= read_len;
             if(body_left_length_ <= 0) {
                 status_ = status::work;
             }
 #ifdef DEBUG
-            std::cout << "pp::socket read: size: " << read_len << " body_left_length_: " << body_left_length_ << std::endl;
+            info() << "pp::socket read: size: " << read_len << " body_left_length_: " << body_left_length_ << "\n";
 #endif
         }
         
@@ -173,27 +180,31 @@ void gsky::net::pp::socket::handle_read() {
 
 void gsky::net::pp::socket::handle_work() {
 #ifdef DEBUG
-    d_cout << "call gsky::net::pp::socket::handle_work()\n";
+    dlog << "call gsky::net::pp::socket::handle_work()\n";
 #endif
-    if(server_handler_ == nullptr) {
-        d_cout << "server_handler is nullptr\n";
+    if(gsky::net::pp::server_handler_ == nullptr) {
+        dlog << "server_handler is nullptr\n";
         return;
     }
-    server_handler_(request_, response_);
+    gsky::net::pp::server_handler_(request_, response_);
 }
 
-void gsky::net::pp::socket::send_data(const std::string &content) {
+void gsky::net::pp::socket::send_data(const std::string &data) {
     std::shared_ptr<gsky::util::vessel> out_buffer = std::shared_ptr<gsky::util::vessel>(new gsky::util::vessel());
     pp::header header;
     header.magic = 0x5050;
+    header.status = (unsigned char) pp::status::ok;
+    header.type   = (unsigned char) pp::data_type::binary_stream;
+    header.length = htonl(data.size());
     memcpy(header.route, header_.route, 6);
-    header.length = htonl(content.size());
+    memcpy(header.code, check_code_, 2);
+
     out_buffer->append(&header, sizeof(struct pp::header));
-    out_buffer->resize(content.size());
-    *out_buffer << content;
+    *out_buffer << data;
     // 实现加密数据
-    gsky::crypto::pe().encode(key_, out_buffer->data(), out_buffer->size());
-    
+    crypto::pe().encode(key_, out_buffer->data() + 8, 8); // 加密头部后8字节
+    crypto::pe().encode(key_, out_buffer->data() + sizeof(pp::header), out_buffer->size() - sizeof(pp::header)); // 加密传输内容
+
     // 发送数据
     if(send_data_handler_) {
         send_data_handler_(out_buffer);
@@ -209,13 +220,20 @@ void gsky::net::pp::socket::push_data(const std::string &data) {
     std::shared_ptr<gsky::util::vessel> out_buffer = std::shared_ptr<gsky::util::vessel>(new gsky::util::vessel());
     pp::header header;
     header.magic = 0x5050;
-    memcpy(header.route, header_.route, 6);
+    header.status = (unsigned char) pp::status::ok;
+    header.type   = (unsigned char) pp::data_type::binary_stream;
     header.length = htonl(data.size());
+    memcpy(header.route, header_.route, 6);
+    memcpy(header.code, check_code_, 2);
+
     out_buffer->append(&header, sizeof(struct pp::header));
     *out_buffer << data;
 
     // 数据加密
-    gsky::crypto::pe().encode(key_, out_buffer->data(), out_buffer->size());
+    //gsky::crypto::pe().encode(key_, out_buffer->data(), out_buffer->size());
+
+    crypto::pe().encode(key_, out_buffer->data() + 8, 8); // 加密头部后8字节
+    crypto::pe().encode(key_, out_buffer->data() + sizeof(pp::header), out_buffer->size() - sizeof(pp::header)); // 加密传输内容
 
     if(push_data_handler_) {
         push_data_handler_(out_buffer);
@@ -250,7 +268,7 @@ void gsky::net::pp::socket::handle_error(pp::status s) {
 
 void gsky::net::pp::socket::send_key() {
 #ifdef DEBUG
-    d_cout << " gsky::net::pp::socket::send_key()\n";
+    dlog << " gsky::net::pp::socket::send_key()\n";
 #endif
     std::shared_ptr<gsky::util::vessel> out_buffer = std::shared_ptr<gsky::util::vessel>(new gsky::util::vessel());
     unsigned char gen_key[8] = {0};
@@ -264,7 +282,7 @@ void gsky::net::pp::socket::send_key() {
 
     memcpy(gen_key, &random_key_1, sizeof(unsigned int));
     memcpy(gen_key + sizeof(unsigned int), &random_key_2, sizeof(unsigned int));
-    memcpy(check_code_, &random_key_1, 2);
+    memcpy(check_code_, &random_key_2, 2);
 
     gsky::net::pp::header header;
     memset(&header, 0, sizeof(pp::header));
@@ -280,7 +298,8 @@ void gsky::net::pp::socket::send_key() {
 
     // 加密传输密钥给客户端，客户端采用全0密钥进pe解密
     // 加密包括头部最后8字节与内容部分，这里发送内容为密钥。
-    crypto::pe().encode(key_, out_buffer->data() + 8, out_buffer->size() - 8);
+    crypto::pe().encode(key_, out_buffer->data() + 8, 8); // 加密头部后8字节
+    crypto::pe().encode(key_, out_buffer->data() + sizeof(pp::header), out_buffer->size() - sizeof(pp::header)); // 加密传输内容
 
     memcpy(key_, gen_key, 8); // 保存密钥
     if(send_data_handler_) {

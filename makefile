@@ -4,7 +4,9 @@
 
 GCC     := gcc
 CC      := g++ 
-CFLAGS  := -O3 -std=c++14 
+CCFLAGS := -O3 -std=c++11 
+CCFLAGS += -DDEBUG
+
 INCLUDE := -I.
 #LDFLAGS := -lpthread
 
@@ -78,7 +80,7 @@ libgsky.a:$(OBJS)
 	$(CC) $^ -o $(BUILD_PATH)/lib/$@ $(CFLAGS)  --static
 
 $(OBJS):%.o:%.cc
-	$(CC) -fPIC -shared -c $^ -o $@ $(DEBUGFLAGS) $(INCLUDE)
+	$(CC) -fPIC -shared -c $^ -o $@ $(DEBUGFLAGS) $(INCLUDE) $(CCFLAGS)
 
 print:
 	@echo $(COBJS)

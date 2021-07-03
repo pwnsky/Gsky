@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdlib>
 #include <string>
+#include <memory>
 
 #include <gsky/gsky.hh>
 #include <gsky/util/vessel.hh>

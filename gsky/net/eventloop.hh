@@ -5,6 +5,7 @@
 
 #include <gsky/thread/thread.hh>
 #include <gsky/net/epoll.hh>
+#include <gsky/net/channel.hh>
 #include <gsky/net/util.hh>
 
 #include <sys/epoll.h>
@@ -26,10 +27,10 @@ public:
     void push_back(std::function<void()> &&func);
     bool is_in_loop_thread();              // 判断是否在事件循环的线程中
     void assert_in_loop_thread();          // 在线程中断言
-    void shutdown(sp_channel spc);                        // 关闭fd的写端
-    void remove_from_epoll(sp_channel spc);                 // 移除事件
-    void update_epoll(sp_channel spc); // 更新epoll事件
-    void add_to_epoll(sp_channel spc);  // 添加epoll事件
+    void shutdown(std::shared_ptr<gsky::net::channel> spc);                        // 关闭fd的写端
+    void remove_from_epoll(std::shared_ptr<gsky::net::channel> spc);                 // 移除事件
+    void update_epoll(std::shared_ptr<gsky::net::channel> spc); // 更新epoll事件
+    void add_to_epoll(std::shared_ptr<gsky::net::channel> spc);  // 添加epoll事件
 private:
     bool looping_;
     int awake_fd_;
@@ -37,8 +38,8 @@ private:
     bool event_handling_;
     std::string name_ = "none";
     const pid_t thread_id_;
-    sp_epoll sp_epoll_;
-    sp_channel sp_awake_channel_;           // 用于唤醒的Channel
+    std::shared_ptr<epoll> sp_epoll_;
+    std::shared_ptr<gsky::net::channel> sp_awake_channel_;           // 用于唤醒的Channel
     mutable gsky::thread::mutex_lock mutex_lock_; // 互斥锁
     std::vector<std::function<void()>> pending_callback_functions_;
     bool calling_pending_callback_function_;
