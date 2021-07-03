@@ -29,17 +29,23 @@ build
 │       │   └── pmd5.hh
 │       ├── gsky.hh
 │       ├── log
-│       │   ├── log.hh
-│       │   └── log_thread.hh
+│       │   ├── logger.hh
+│       │   ├── logger_thread.hh
+│       │   └── log.hh
 │       ├── net
 │       │   ├── channel.hh
 │       │   ├── epoll.hh
 │       │   ├── eventloop.hh
 │       │   ├── eventloop_thread.hh
 │       │   ├── eventloop_threadpool.hh
+│       │   ├── http
 │       │   ├── net.hh
-│       │   ├── pp.hh
-│       │   ├── pp_socket.hh
+│       │   ├── pp
+│       │   │   ├── pp.hh
+│       │   │   ├── request.hh
+│       │   │   ├── response.hh
+│       │   │   └── socket.hh
+│       │   ├── socket.hh
 │       │   └── util.hh
 │       ├── server.hh
 │       ├── thread
@@ -48,14 +54,12 @@ build
 │       │   ├── mutex_lock.hh
 │       │   ├── noncopyable.hh
 │       │   └── thread.hh
-│       ├── util
-│       │   ├── firewall.hh
-│       │   ├── json.hh
-│       │   ├── url.hh
-│       │   ├── util.hh
-│       │   └── vessel.hh
-│       └── work
-│           └── work.hh
+│       └── util
+│           ├── firewall.hh
+│           ├── json.hh
+│           ├── url.hh
+│           ├── util.hh
+│           └── vessel.hh
 └── lib
     └── libgsky.so
 
@@ -70,28 +74,22 @@ build
 例如: https://github.com/pwnsky/gsky/blob/main/example/server_1.cc
 
 ```c++
-
 // g++ main.cc -lpthread -lgsky -o gsky
 // ./gsky -c ../conf/gsky.conf
-//
 #include <iostream>
 #include <signal.h>
 #include <unistd.h>
-
-#include <gsky/gsky.hh>
 #include <gsky/server.hh>
-#include <gsky/work/work.hh>
 
 #define UNUSED(var) do { (void)(var); } while (false)
 
-//extern std::string gsky::data::config_path;
-//
-std::string gsky::data::os_info;
-gsky::server server;
+using namespace gsky;
+
+server ser; // 创建服务器
 
 void gsky_exit(int s) {
     UNUSED(s);
-    server.stop();
+    ser.stop(); // 停止服务
 }
 
 void help() {
@@ -102,27 +100,34 @@ void help() {
                  ;
 }
 
-enum class RouterRoot {
+enum class RouteRoot {
     Keep = 0,
-    CheckUpdate,
-    Login,
+    CheckUpdate = 0x10,
+    Login = 0x11,
+    Echo = 0x20,
 };
 
-// 服务器回调函数, 函数格式为 void func(gsky::work::work *)
-void server_run(gsky::work::work *w) {
-
-    switch((RouterRoot)w->route_[0]) {
-        case RouterRoot::Keep: {
-            w->send_data("Keep"); // 发送给客户端"Keep"字符串
+// 服务器回调函数, 函数格式为 void func(sp_request r, sp_response w)
+void server_run(net::pp::sp_request r, net::pp::sp_response w) {
+    log::info() << "收到数据: " << r->content() << '\n';
+    switch((RouteRoot)r->route(0)) {
+        case RouteRoot::Keep: {
+            w->send_data("Keep");
         } break;
-        case RouterRoot::CheckUpdate: {
+        case RouteRoot::CheckUpdate: {
             std::cout << "checking updateing\n";
         } break;
-        case RouterRoot::Login: {
+        case RouteRoot::Login: {
             std::cout << "Login\n";
         } break;
+        case RouteRoot::Echo: {
+            std::cout << "Echo\n";
+            w->push_data("Push data 1 to you: " + r->content());
+            w->push_data("Push data 2 to you: abc");
+        } break;
         default: {
-            w->send_data(w->content_.to_string()); // 回显输入的内容
+            std::cout << "Error\n";
+            w->send_data("ERROR");
         } break;
     }
 }
@@ -130,36 +135,35 @@ void server_run(gsky::work::work *w) {
 int main(int argc, char **argv) {
     ::signal(SIGINT, gsky_exit); // Ctrl + c 退出服务器
     int opt = 0;
-    gsky::data::config_path = DEFAULT_CONFIG_FILE;
+
+    // 获取参数
     while((opt = getopt(argc, argv,"h::v::a::c:"))!=-1) {
         switch (opt) {
-        case 'h': {
+        case 'h': { // 帮助
             help();
-            exit(0);
+            return 0;
         } break;
-        case 'c': {
+        case 'c': { 
             // 设置服务器配置文件路径
-            server.set_config_path(optarg);
+            ser.set_config_path(optarg);
         } break;
         case 'v': {
             // 显示 gsky lib 的版本号
             std::cout << "gsky version: " << gsky::version() << '\n';
-            exit(0);
+            return 0;
         } break;
         default: {
             std::cout << "-h get more info" << std::endl;
-            exit(0);
+            return -1;
         }
         }
     }
 
     // 设置服务器回调函数
-    server.set_func_handler(server_run);
-    server.run(); // 启动gsky服务器
-    std::cout << "\033[40;33mgsky quited! \n\033[0m";
+    ser.set_pp_server_handler(server_run);
+    ser.run(); // 启动gsky服务器
     return 0;
 }
-
 ```
 
 
@@ -202,14 +206,23 @@ gsky server port: 8080  number of thread: 4
 
 测试服务器
 
-由于服务器采用pp协议进行传输的，使用example/client.py进行测试，若想使用pp协议客户端，则访问 [pp](https://github.com/pwnsky/pp) 下载相应的客户端pp协议库。
+由于服务器采用pp协议进行传输的，使用test/client.py进行测试，若想使用pp协议客户端，则访问 [pp](https://github.com/pwnsky/pp) 下载相应的客户端pp协议sdk。
 
 ```
-./client.py
-send...
-recv: 
-route: b'\x00\x00\x00\x00' length: 4
-b'Keep'
+pp connecting
+request get key: route: b'\x00\x00\x00\x00\x00\x00' length: 8 status : 0x31
+code: b'e\xfa'
+b'key: \xbf\xe6\x80Ve\xfaR3'
+b'code: e\xfa'
+route: b'0\x00\x00\x00\x00\x00' length: 5 status : 0x30
+code: b'e\xfa'
+b'recv: ERROR'
+b'key: \xbf\xe6\x80Ve\xfaR3'
+b'code: e\xfa'
+route: b' \x00\x00\x00\x00\x00' length: 40 status : 0x30
+code: b'e\xfa'
+b'recv: Push data 1 to you: Yeah you are online!'
+
 ```
 
 若运行出现以上内容，则服务器正常运行了。
@@ -231,3 +244,7 @@ i0gan
 2021-06-30 开启gsky项目
 
 2021-07-01 修改psp协议名称为pp协议，增加对称加密传输，加密方采用 PE (Pwnsky Encryption) 加密。
+
+2021-07-02 完善pp协议
+
+2021-07-03 更模块化，完善日志系统
