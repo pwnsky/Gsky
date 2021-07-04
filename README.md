@@ -1,9 +1,13 @@
-# gsky
+# GSKY游戏服务器框架
+
+GSKY GAME SERVER FRAMEWORK
+
+
 
 ## 介绍
 
 为了便于更快速开发高性能游戏服务器，特意基于lgx web服务器框架，二次开发且封装为一个服务器库。
-gsky是一个基于epoll架构的高性能游戏服务器库，采用更快速的pp (pwnsky protocol)二进制加密协议进行传输数据。
+gsky是一个基于epoll 边缘触发架构的高性能游戏服务器库，采用更快速的pp (pwnsky protocol)二进制加密双向协议进行传输数据，服务端支持异步消息推送，日志打印与日志文件写入，协程等，让使用者更专注与游戏逻辑开发。
 
 [pp协议sdk](https://github.com/pwnsky/pp)
 
@@ -74,8 +78,10 @@ build
 例如: https://github.com/pwnsky/gsky/blob/main/example/server_1.cc
 
 ```c++
+
 // g++ main.cc -lpthread -lgsky -o gsky
 // ./gsky -c ../conf/gsky.conf
+//
 #include <iostream>
 #include <signal.h>
 #include <unistd.h>
@@ -101,33 +107,43 @@ void help() {
 }
 
 enum class RouteRoot {
-    Keep = 0,
-    CheckUpdate = 0x10,
-    Login = 0x11,
-    Echo = 0x20,
+    TestError = 0x00,
+    TestEcho = 0x10,
+    TestPush = 0x20,
+    TestMultiPush = 0x30,
 };
 
 // 服务器回调函数, 函数格式为 void func(sp_request r, sp_response w)
 void server_run(net::pp::sp_request r, net::pp::sp_response w) {
     log::info() << "收到数据: " << r->content() << '\n';
     switch((RouteRoot)r->route(0)) {
-        case RouteRoot::Keep: {
-            w->send_data("Keep");
+        case RouteRoot::TestError: {
+        log::info() << "TestError";
+            w->send_data("TestError");
         } break;
-        case RouteRoot::CheckUpdate: {
-            std::cout << "checking updateing\n";
+        case RouteRoot::TestEcho: {
+        log::info() << "TestEcho";
+            w->send_data(r->content());
         } break;
-        case RouteRoot::Login: {
-            std::cout << "Login\n";
+        case RouteRoot::TestPush: {
+        log::info() << "TestPush";
+            std::string data;
+            data.resize(0x100000);
+            w->push_data(data);
+            w->push_data("Push data 1111 to you" + data);
         } break;
-        case RouteRoot::Echo: {
-            std::cout << "Echo\n";
-            w->push_data("Push data 1 to you: " + r->content());
-            w->push_data("Push data 2 to you: abc");
+        case RouteRoot::TestMultiPush: {
+        log::info() << "TestMultiPush";
+            w->push_data("Push data 1111 to you");
+            w->push_data("Push data 2222 to you");
+            w->push_data("Push data 1111 to you");
+            std::string data;
+            data.resize(0x8000000);
+            w->send_data(data); // push big data
         } break;
         default: {
-            std::cout << "Error\n";
-            w->send_data("ERROR");
+            std::cout << "None\n";
+            w->send_data("None");
         } break;
     }
 }
@@ -229,7 +245,9 @@ b'recv: Push data 1 to you: Yeah you are online!'
 
 
 
-详情更多，请看[测试目录](https://github.com/pwnsky/gsky/tree/main/example)下的例子。
+服务端API详情，请看[服务器样例](https://github.com/pwnsky/gsky/tree/main/example)下的例子。
+
+服务端测试详情，请看[测试](https://github.com/pwnsky/gsky/tree/main/test)下的例子。
 
 
 
@@ -249,6 +267,7 @@ i0gan
 
 2021-07-03 更模块化，完善日志系统
 
-2021-07-04 更改vessel容器，修复无法接受大数据包 + vessel测试，客户端测试，pe解密测试。
+2021-07-04 更改vessel容器，修复无法接受大数据包 + vessel测试，客户端测试，pe解密测试，修复et模式无法发送大包问题。
 
+2021-07-05 异步消息推送实现。
 

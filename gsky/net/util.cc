@@ -69,7 +69,7 @@ ssize_t gsky::net::util::read(int fd, gsky::util::vessel &in_buffer, int length)
         if((read_len = ::read(fd, buffer, read_left % MAX_BUF_SIZE)) < 0) {
             if(errno == EINTR)
                 continue;
-            else if (errno == EAGAIN) {
+            else if (errno == EAGAIN) { 
                 if(read_sum > 0) return read_sum;
                 return -1;
             }
@@ -113,7 +113,9 @@ ssize_t gsky::net::util::write(int fd, void *buffer, size_t length) {
     }
     return write_sum;
 }
-
+/*
+ * 由于采用ET模式，必须写的时候写到EAGIAN为止。
+ * */
 ssize_t gsky::net::util::write(int fd, gsky::util::vessel &out_buffer) {
     ssize_t write_len = 0;
     ssize_t write_sum = 0;
@@ -135,6 +137,9 @@ ssize_t gsky::net::util::write(int fd, gsky::util::vessel &out_buffer) {
     return write_sum;
 }
 
+/*
+ * 由于采用ET模式，必须写的时候写到EAGIAN为止。
+ * */
 ssize_t gsky::net::util::write(int fd, std::shared_ptr<gsky::util::vessel> out_buffer) {
     ssize_t write_len = 0;
     ssize_t write_sum = 0;
@@ -144,7 +149,9 @@ ssize_t gsky::net::util::write(int fd, std::shared_ptr<gsky::util::vessel> out_b
             if(errno == EINTR)
                 continue;
             else if(errno == EAGAIN) {
-                //std::cout << "EAGAIN\n";
+#ifdef DEBUG
+            dlog << "write EAGAIN\n";
+#endif
                 return write_sum;
             }else {
                 return -1;
@@ -153,6 +160,27 @@ ssize_t gsky::net::util::write(int fd, std::shared_ptr<gsky::util::vessel> out_b
         write_sum += write_len;
         out_buffer->sub(write_len);
     }
+/*
+    // 写完缓冲区
+    if(errno != EAGAIN && out_buffer->size() == 0) {
+#ifdef DEBUG
+            dlog << "continue write buffer EAGAIN\n";
+#endif
+        while(1) {
+            write_len = ::write(fd, "\x00", 1);
+            if(write_len < 0 && errno == EAGAIN) 
+                break;
+            else if(write_len == 0)
+                break;
+        }
+    }else {
+#ifdef DEBUG
+            dlog << "finish write : left: " << out_buffer->size() << "\n";
+            if(errno == EAGAIN)
+                dlog << "write EAGAIN\n";
+#endif
+    }
+*/
     return write_sum;
 }
 

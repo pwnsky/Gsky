@@ -9,17 +9,16 @@ using namespace gsky::log;
 
 namespace gsky {
 namespace util {
-/*
-#define VESSEL_DEFAULT_SIZE  0x100
-#define VESSEL_DEFAULT_ALIGN 0x100
-*/
+
+#define VESSEL_DEFAULT_SIZE  0x18
+#define VESSEL_DEFAULT_ALIGN 0x20
 
 class vessel {
 public:
     vessel() :
         size_(0),
-        capacity_(0x18),
-        data_ptr_(static_cast<char*>(malloc(0x18))) {
+        capacity_(VESSEL_DEFAULT_SIZE),
+        data_ptr_(static_cast<char*>(malloc(VESSEL_DEFAULT_SIZE))) {
 #ifdef DEBUG
         dlog << "gsky::util::vessel::vessel()\n";
 #endif
@@ -54,14 +53,15 @@ public:
     void operator<<(std::string data) {
         size_t size =  data.size();
         if((capacity_ - data_offset_ - size_) < size) {
-           size_t mem_size = capacity_ + size;
+           size_t mem_size = align(capacity_ + size);
            void* ret_ptr = realloc(data_ptr_, mem_size);
            if(ret_ptr == nullptr) {
                error() << "data realloc, can't append\n";
                return;
            }
-           data_ptr_ = static_cast<char *>(ret_ptr);
-           capacity_ = mem_size;
+            data_ptr_ = static_cast<char *>(ret_ptr);
+            capacity_ = mem_size;
+            times_ ++;
         }
         memcpy(data_ptr_ + data_offset_ + size_, data.data(), size); //拷贝至数据末尾
         size_ += size;
@@ -70,14 +70,15 @@ public:
     void operator<<(const char *data) {
         size_t size =  strlen(data);
         if((capacity_ - data_offset_ - size_) < size) {
-           size_t mem_size = capacity_ + size;
+           size_t mem_size = align(capacity_ + size);
            void* ret_ptr = realloc(data_ptr_, mem_size);
            if(ret_ptr == nullptr) {
                error() << "data realloc, can't append\n";
                return;;
            }
-           data_ptr_ = static_cast<char *>(ret_ptr);
-           capacity_ = mem_size;
+            data_ptr_ = static_cast<char *>(ret_ptr);
+            capacity_ = mem_size;
+            times_ ++;
         }
         memcpy(data_ptr_ + size_, data, size);
         size_ += size;
@@ -85,14 +86,15 @@ public:
     void append(void *data, size_t length) {
         size_t size = length;
         if((capacity_ - data_offset_ - size_) < size) {
-           size_t mem_size = capacity_ + size;
+           size_t mem_size = align(capacity_ + size);
            void* ret_ptr = realloc(data_ptr_, mem_size);
            if(ret_ptr == nullptr) {
                error() << "data realloc, can't append\n";
                return;;
            }
-           data_ptr_ = static_cast<char *>(ret_ptr);
-           capacity_ = mem_size;
+            data_ptr_ = static_cast<char *>(ret_ptr);
+            capacity_ = mem_size;
+            times_ ++;
         }
         memcpy(data_ptr_ + data_offset_ + size_, data, size);
         size_ += size;
@@ -180,8 +182,8 @@ public:
         size_ = 0;
         data_offset_ = 0;
         free(data_ptr_);
-        capacity_ = 0x18;
-        data_ptr_ = (char *)malloc(0x18);
+        capacity_ = VESSEL_DEFAULT_SIZE;
+        data_ptr_ = (char *)malloc(VESSEL_DEFAULT_SIZE);
     }
 
     char *data() {
@@ -208,14 +210,14 @@ private:
     size_t capacity_;
     size_t data_offset_;
     char *data_ptr_;
-/*
+    char times_ = 1; // append 时开辟大小 2次方增加，进可能的避免多次 realloc。
+
     size_t align(size_t size) {
         size_t n = size / VESSEL_DEFAULT_ALIGN;
         if(size % VESSEL_DEFAULT_ALIGN == 0)
             return n * VESSEL_DEFAULT_ALIGN;
-        return  (n + 1) * VESSEL_DEFAULT_ALIGN;
+        return  ((n + 1) * VESSEL_DEFAULT_ALIGN) * times_ * times_;
     }
-*/
 };
 
 }

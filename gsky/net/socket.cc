@@ -70,7 +70,7 @@ void gsky::net::socket::handle_close() {
 #ifdef DEBUG
     dlog << "call gsky::net::socket::handle_close()\n";
 #endif
-    std::shared_ptr<socket> guard(shared_from_this()); // 计数+1，避免直接删除本身对象，从epoll中进行删除后再删除自己。
+    std::shared_ptr<socket> guard(shared_from_this()); // 计数+1，避免直接删除本身对象，需从epoll中进行删除后再删除自己。
     eventloop_->remove_from_epoll(sp_channel_);
 }
 
@@ -108,8 +108,10 @@ void gsky::net::socket::handle_read() {
 
 // 写入数据函数，负责循环剩余数据或队列中的数据。
 void gsky::net::socket::handle_write() {
+#ifdef DEBUG
+    dlog << "gsky::net::socket::handle_write()\n";
+#endif
     __uint32_t &event = sp_channel_->get_event();
-
     if(out_buffer_queue_.size() == 0)
         return;
 
@@ -126,36 +128,51 @@ void gsky::net::socket::handle_write() {
     if(out_buffer_->size() > 0) { // 保证out_buffer大于0
         if(util::write(fd_, out_buffer_) < 0) {
             perror("write header data");
-            sp_channel_->set_event(0);
-            //out_buffer_->clear();
+            //sp_channel_->set_event(0);
+            if(out_buffer_->size() > 0) {
+                event |= EPOLLOUT; // next round set event as EPOLLOUT
+#ifdef DEBUG
+    info() << "Not finished one write, left" << out_buffer_->size() << "\n";
+#endif
+                return;
+            }
         }
+
+#ifdef DEBUG
+    info() << "Package data left: " << out_buffer_->size() << "\n";
+#endif
 
         if(out_buffer_->size() == 0) { // 数据发送完毕后，若out_buffer_queue_还存在待发送数据，则继续发送
             if(out_buffer_queue_.size() > 0)
                 out_buffer_queue_.pop();
+#ifdef DEBUG
+    info() << "send pakages left: " << out_buffer_queue_.size() << "\n";
+#endif
             out_buffer_.reset();
             if(out_buffer_queue_.size() > 0) {
-#ifdef DEBUG
-    info() << "send pakage again, left" << out_buffer_queue_.size() << "\n";
-#endif
                 event = EPOLLIN | EPOLLOUT;
                 //handle_write();
                 //event |= EPOLLOUT; // next round set event as EPOLLOUT
             }else {
                 out_buffer_ = nullptr;
             }
-            //return;
+        }
+    }
+
+    if(out_buffer_ != nullptr) {
+        if (out_buffer_->size() > 0) {
+            event |= EPOLLOUT; // next round set event as EPOLLOUT
+#ifdef INFO
+        info() << "write end packge data left, now write again: " << out_buffer_->size() << "\n";
+        //handle_write();
+        //eventloop_->run_in_loop(std::bind(&socket::handle_write, shared_from_this()));
+#endif
         }
     }
 
 #ifdef INFO
-    info() << "write end packge left" << out_buffer_queue_.size() << "\n";
+    info() << "write end packge left " << out_buffer_queue_.size() << "\n";
 #endif
-
-    if(out_buffer_ != nullptr) {
-        if (out_buffer_->size() > 0)
-            event |= EPOLLOUT; // next round set event as EPOLLOUT
-    }
 }
 
 // channel调用后handle函数后处理
@@ -166,20 +183,19 @@ void gsky::net::socket::handle_reset() {
     __uint32_t &event = sp_channel_->get_event();
 
     if(status_ == status::connected) { // 连接状态处理
-        if(event != 0) {
-            if((event & EPOLLIN) && (event & EPOLLOUT)) { // 若同时有两种状态，优先实现写入
-                event = EPOLLOUT;
-                std::cout << "fuckkkking !";
-            }else {
-                event = EPOLLIN;
-            }
-        } else { //若为0事件的话，等待读取
+        if(event == 0) {// 事件为空，等待读取
             event = EPOLLIN;
+        } else {
+            if((event & EPOLLIN) && (event & EPOLLOUT)) { // 若同时有两种状态，优先只实现写入
+                event = EPOLLOUT;
+            }
         }
-
         event |= EPOLLET; // 设置为边缘模式
 #ifdef DEBUG
     debug() << "net::socket::handle_reset-> update\n";
+    if(event & EPOLLOUT) {
+    debug() << "net::socket::handle_reset-> update has EPOLLOUT\n";
+    }
 #endif
         eventloop_->update_epoll(sp_channel_);
     } else if (status_ == status::disconnecting
@@ -214,7 +230,8 @@ void gsky::net::socket::push_data(std::shared_ptr<gsky::util::vessel> v) {
     out_buffer_queue_.push(v); // 将数据放入队列
     wait_event_count_ ++; // 计数++
     // 用于异步回调 handle_push_data_reset函数进行更新epoll事件
-    eventloop_->run_in_loop(std::bind(&socket::handle_push_data_reset, shared_from_this()));
+    eventloop_->run_in_loop(std::bind(&socket::handle_write, shared_from_this()));
+    //eventloop_->run_in_loop(std::bind(&socket::handle_push_data_reset, shared_from_this()));
 }
 
 // 采用单一线程进行更新epoll事件，多线程易出现条件竞争，导致内存错误

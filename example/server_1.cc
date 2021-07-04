@@ -27,33 +27,43 @@ void help() {
 }
 
 enum class RouteRoot {
-    Keep = 0,
-    CheckUpdate = 0x10,
-    Login = 0x11,
-    Echo = 0x20,
+    TestError = 0x00,
+    TestEcho = 0x10,
+    TestPush = 0x20,
+    TestMultiPush = 0x30,
 };
 
 // 服务器回调函数, 函数格式为 void func(sp_request r, sp_response w)
 void server_run(net::pp::sp_request r, net::pp::sp_response w) {
     log::info() << "收到数据: " << r->content() << '\n';
     switch((RouteRoot)r->route(0)) {
-        case RouteRoot::Keep: {
-            w->send_data("Keep");
+        case RouteRoot::TestError: {
+        log::info() << "TestError";
+            w->send_data("TestError");
         } break;
-        case RouteRoot::CheckUpdate: {
-            std::cout << "checking updateing\n";
+        case RouteRoot::TestEcho: {
+        log::info() << "TestEcho";
+            w->send_data(r->content());
         } break;
-        case RouteRoot::Login: {
-            std::cout << "Login\n";
+        case RouteRoot::TestPush: {
+        log::info() << "TestPush";
+            std::string data;
+            data.resize(0x100000);
+            w->push_data(data);
+            w->push_data("Push data 1111 to you" + data);
         } break;
-        case RouteRoot::Echo: {
-            std::cout << "Echo\n";
-            w->push_data("Push data 1 to you: " + r->content());
-//            w->push_data("Push data 2 to you: abc");
+        case RouteRoot::TestMultiPush: {
+        log::info() << "TestMultiPush";
+            w->push_data("Push data 1111 to you");
+            w->push_data("Push data 2222 to you");
+            w->push_data("Push data 1111 to you");
+            std::string data;
+            data.resize(0x8000000);
+            w->send_data(data); // push big data
         } break;
         default: {
-            std::cout << "Error\n";
-            w->send_data("ERROR");
+            std::cout << "None\n";
+            w->send_data("None");
         } break;
     }
 }

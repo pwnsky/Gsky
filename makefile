@@ -86,6 +86,12 @@ $(OBJS):%.o:%.cc
 print:
 	@echo $(COBJS)
 
+run: $(TARGET) server_1
+	./server_1 -c conf/gsky.conf
+
+server_1: example/server_1.cc
+	$(CC) $< -o $@ -lgsky -lpthread
+
 .PHONY:clean
 clean:
 	$(RM) $(BUILD_PATH)/lib/*

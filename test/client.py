@@ -4,6 +4,7 @@ import json
 from time import *
 import time
 
+
 PEXorTable = [
         0xbe, 0xd1, 0x90, 0x88, 0x57, 0x00, 0xe9, 0x53, 0x10, 0xbd, 0x2a, 0x34, 0x51, 0x84, 0x07, 0xc4, 
         0x33, 0xc5, 0x3b, 0x53, 0x5f, 0xa8, 0x5d, 0x4b, 0x6d, 0x22, 0x63, 0x5d, 0x3c, 0xbd, 0x47, 0x6d, 
@@ -76,7 +77,7 @@ tid = ''
 sk = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 
 if(DEBUG == 1):
-    sk.connect(('127.0.0.1', 8080))
+    sk.connect(('pwnsky.com', 4096))
 #else:
 #    sk.connect(('pwnsky.com', 4096))
 key = b'\x00' * 8
@@ -145,27 +146,42 @@ def pp_recv():
     body = PE_Decode(key, body)
     return (ord(status), body)
 
+print('------------------- Test Connect -------------------')
 print('pp connecting')
 pp_connect()
-pp_send(b'hello pp!', b'\x30')
+
+print('------------------- Test Error -------------------')
+pp_send(b'hello pp!, Test Error', b'\x00') # Test Error
 (status, d) = pp_recv()
 if(status == 0x30): # 状态代码为OK
     print(b'recv: ' + d)
 
-pp_send(b'Yeah you are online!', b'\x20')
+print('------------------- Test Echo -------------------')
+pp_send(b'Test Echo', b'\x10') # Test Echo
+(status, d) = pp_recv()
+if(status == 0x30): # 状态代码为OK
+    print(b'recv: ' + d)
+print('------------------- Test Push -------------------')
+pp_send(b'Test Push', b'\x00') # Test Push
+(status, d) = pp_recv()
+if(status == 0x30): # 状态代码为OK
+    print(b'recv: ' + d)
+print('------------------- Test Multi Server Push -------------------')
+pp_send(b'Test Multi Push', b'\x30') # Test Multi Push
 (status, d) = pp_recv()
 if(status == 0x30): # 状态代码为OK
     print(b'recv: ' + d)
 
-pp_send(b'T' * 0x2000, b'\x20')
-print(sk.recv(100))
-'''
-(status, d) = pp_recv()
+(status, d) = pp_recv() # recv again
 if(status == 0x30): # 状态代码为OK
     print(b'recv: ' + d)
 
+
 '''
-'''
+pp_send(b'' * 0x10, b'\x20')
+(status, d) = pp_recv()
+if(status == 0x30): # 状态代码为OK
+    print(b'recv: ' + d)
 (status, d) = pp_recv()
 if(status == 0x30): # 状态代码为OK
     print('recved data again')

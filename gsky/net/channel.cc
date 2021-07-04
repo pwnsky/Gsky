@@ -2,6 +2,8 @@
 
 #include <iostream>
 #include <sys/epoll.h>
+#include <netinet/tcp.h>
+#include <arpa/inet.h>
 
 gsky::net::channel::channel(eventloop *elp) {
     elp_ = elp;
@@ -60,12 +62,22 @@ void gsky::net::channel::handle_event() {
 #ifdef DEBUG
     dlog << "call gsky::net::channel::handle_event\n";
 #endif
-    event_ = 0; //处理后的事件清0
+    event_ = 0; //处理后的事件清0, 触发该条件情况，若在传输数据中，客户端中途断开连接，则需要正确施放内存。
     if((revent_ & EPOLLHUP) && !(revent_ & EPOLLIN)) {
         event_ = 0;
 #ifdef DEBUG
     dlog << "call gsky::net::channel::handle_event-> clean\n";
 #endif
+        // 对socket再次判断是否断开连接
+        struct tcp_info tcp_info;
+        int len= sizeof(tcp_info);
+        getsockopt(fd_, IPPROTO_TCP, TCP_INFO, &tcp_info, (socklen_t *)&len);
+        if((tcp_info.tcpi_state != TCP_ESTABLISHED)) { // 断开连接
+#ifdef DEBUG
+    dlog << "call gsky::net::channel::handle_event-> socket is unused\n";
+#endif
+            if(error_handler_) handle_error(); //施放内存
+        }
         return;
     }
     // revent是上一个事件
