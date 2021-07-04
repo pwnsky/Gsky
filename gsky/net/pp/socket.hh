@@ -58,7 +58,7 @@ private:
     unsigned char key_[8] = {0}; // 初始化为0
     std::map<std::string, std::string> client_info_;
     gsky::net::pp::header header_;
-    int  body_left_length_ = 0;
+    int  body_length_ = 0;
     void handle_disconnect();
     void handle_work();
     void handle_error(pp::status s);

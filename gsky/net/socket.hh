@@ -44,6 +44,7 @@ private:
     void handle_read();
     void handle_write();
     void handle_reset();
+    void handle_error();
     void handle_push_data_reset();
 };
 

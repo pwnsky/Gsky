@@ -63,22 +63,35 @@ void gsky::net::channel::handle_event() {
     event_ = 0; //处理后的事件清0
     if((revent_ & EPOLLHUP) && !(revent_ & EPOLLIN)) {
         event_ = 0;
+#ifdef DEBUG
+    dlog << "call gsky::net::channel::handle_event-> clean\n";
+#endif
         return;
     }
+    // revent是上一个事件
     // 处理错误
     if(revent_ & EPOLLERR) {
         if(error_handler_) handle_error();
         event_ = 0;
+#ifdef DEBUG
+    dlog << "call gsky::net::channel::handle_event-> error\n";
+#endif
         return ;
     }
 
     // 优先处理有数据将要写入
     if(revent_ & EPOLLOUT) {
+#ifdef DEBUG
+    dlog << "call gsky::net::channel::handle_event-> write\n";
+#endif
         handle_write();
     }
 
     // 有数据来临
     if(revent_ & (EPOLLIN | EPOLLPRI | EPOLLRDHUP)) {
+#ifdef DEBUG
+    dlog << "call gsky::net::channel::handle_event-> read\n";
+#endif
         handle_read();
     }
 

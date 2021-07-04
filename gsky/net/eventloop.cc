@@ -59,18 +59,25 @@ void gsky::net::eventloop::loop() {
     std::vector<std::shared_ptr<channel>> v_sp_event_channels;
     while(!quit_) {
 #ifdef DEBUG
-        debug() << "event looping!\n";
+        dlog << "event looping! \n";
 #endif
         v_sp_event_channels.clear();
         v_sp_event_channels = sp_epoll_->get_all_event_channels(); // get all unhandle events
         event_handling_ = true;
         for (auto &spc : v_sp_event_channels) {
-            if(spc)
-                spc->handle_event(); // handle event
+            if(spc) {
 #ifdef DEBUG
-        debug() << "call handle_event\n";
+        dlog << "call handle_event\n";
 #endif
+                spc->handle_event(); // handle event
+            }else {
+#ifdef DEBUG
+            dlog << "event is nullptr\n";
+#endif
+            }
+
         }
+
         event_handling_  = false;
         run_pending_callback_func();   // run pending callback function
         //sp_epoll_->handle_expired_event();
@@ -86,6 +93,9 @@ void gsky::net::eventloop::quit() {
 
 // 增加异步调用函数
 void gsky::net::eventloop::run_in_loop(std::function<void()> &&func) {
+#ifdef DEBUG
+        dlog << "run_in_loop \n";
+#endif
     if(is_in_loop_thread())
         func();
     else

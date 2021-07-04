@@ -7,6 +7,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <gsky/log/log.hh>
 
 #define MAX_BUF_SIZE          0x1000
 
@@ -75,8 +76,12 @@ ssize_t gsky::net::util::read(int fd, gsky::util::vessel &in_buffer, int length)
             else
                 return -1;
         } else if (read_len == 0) {
+#ifdef DEBUG
+        dlog << "util::read() read_len == 0\n";
+#endif
             return 0;
         }
+
         read_sum += read_len;
         read_left -= read_len;
         in_buffer.append(buffer, read_len);

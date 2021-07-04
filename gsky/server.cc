@@ -45,7 +45,9 @@ void gsky::server::set_config_path(std::string config_path) {
 bool gsky::server::stop() {
     sp_net_->stop();
     sp_logger_thread_->stop();
+#ifdef INFO
     info() << "server stoped!\n";
+#endif
     return true;
 }
 
@@ -69,8 +71,10 @@ bool gsky::server::run() {
         }
 
         logger() << "*************  start gsky pp server...  ***************";
+#ifdef INFO
         info() << "\ngsky server port: " << port_ << "  number of thread: " << number_of_thread_ << "\n"
             << " Log file at: " << logger_path_ << "\n";
+#endif
 
         if(false == this->run_network_module()) {
             error() << "Run network module failed!\n";

@@ -31,6 +31,7 @@ gsky::net::socket::socket(int fd, eventloop *elp) :
     sp_channel_->set_read_handler(std::bind(&socket::handle_read, this));
     sp_channel_->set_write_handler(std::bind(&socket::handle_write, this));
     sp_channel_->set_reset_handler(std::bind(&socket::handle_reset, this));
+    sp_channel_->set_error_handler(std::bind(&socket::handle_error, this));
 
     sp_pp_socket_->set_send_data_handler(std::bind(&socket::send_data, this, std::placeholders::_1));
     sp_pp_socket_->set_push_data_handler(std::bind(&socket::push_data, this, std::placeholders::_1));
@@ -119,7 +120,8 @@ void gsky::net::socket::handle_write() {
     }
 
 #ifdef DEBUG
-    dlog << "write size: " + std::to_string(out_buffer_->size()) << "\n";
+    info() << "write size: " + std::to_string(out_buffer_->size()) << "\n";
+    info() << "packge left: " << out_buffer_queue_.size() << "\n";
 #endif
     if(out_buffer_->size() > 0) { // 保证out_buffer大于0
         if(util::write(fd_, out_buffer_) < 0) {
@@ -133,36 +135,58 @@ void gsky::net::socket::handle_write() {
                 out_buffer_queue_.pop();
             out_buffer_.reset();
             if(out_buffer_queue_.size() > 0) {
-                event |= EPOLLOUT; // next round set event as EPOLLOUT
+#ifdef DEBUG
+    info() << "send pakage again, left" << out_buffer_queue_.size() << "\n";
+#endif
+                event = EPOLLIN | EPOLLOUT;
+                //handle_write();
+                //event |= EPOLLOUT; // next round set event as EPOLLOUT
+            }else {
+                out_buffer_ = nullptr;
             }
-            return;
+            //return;
         }
     }
-    if (out_buffer_->size() > 0)
-        event |= EPOLLOUT; // next round set event as EPOLLOUT
+
+#ifdef INFO
+    info() << "write end packge left" << out_buffer_queue_.size() << "\n";
+#endif
+
+    if(out_buffer_ != nullptr) {
+        if (out_buffer_->size() > 0)
+            event |= EPOLLOUT; // next round set event as EPOLLOUT
+    }
 }
 
 // channel调用后handle函数后处理
 void gsky::net::socket::handle_reset() {
+#ifdef DEBUG
+    debug() << "net::socket::handle_reset\n";
+#endif
     __uint32_t &event = sp_channel_->get_event();
 
-    if(status_ == status::connected) {
+    if(status_ == status::connected) { // 连接状态处理
         if(event != 0) {
-            if((event & EPOLLIN) && (event & EPOLLOUT)) {
-                event = 0;
-                event |= EPOLLOUT;
+            if((event & EPOLLIN) && (event & EPOLLOUT)) { // 若同时有两种状态，优先实现写入
+                event = EPOLLOUT;
+                std::cout << "fuckkkking !";
+            }else {
+                event = EPOLLIN;
             }
-            event |= EPOLLET;
-        } else {
-            event |= (EPOLLIN | EPOLLET);
+        } else { //若为0事件的话，等待读取
+            event = EPOLLIN;
         }
+
+        event |= EPOLLET; // 设置为边缘模式
+#ifdef DEBUG
+    debug() << "net::socket::handle_reset-> update\n";
+#endif
         eventloop_->update_epoll(sp_channel_);
     } else if (status_ == status::disconnecting
                && (event & EPOLLOUT)) {
         event = (EPOLLOUT | EPOLLET); // 再次回调，处理断开连接。
         status_ = status::disconnected;
     } else { // disconnected
-
 #ifdef DEBUG
         dlog << " disconnected \n";
 #endif
@@ -195,9 +219,13 @@ void gsky::net::socket::push_data(std::shared_ptr<gsky::util::vessel> v) {
 
 // 采用单一线程进行更新epoll事件，多线程易出现条件竞争，导致内存错误
 void gsky::net::socket::handle_push_data_reset() {
+#ifdef DEBUG
+        dlog << "handle_push_data_reset \n";
+#endif
     wait_event_count_ --; // 计数--
     __uint32_t &event = sp_channel_->get_event();
-    event |= EPOLLIN | EPOLLET | EPOLLOUT;
+    //event |= EPOLLIN | EPOLLET | EPOLLOUT;
+    event = EPOLLIN | EPOLLOUT;
     // 回调写入函数
     eventloop_->update_epoll(sp_channel_); // 更新事件
 }
@@ -210,4 +238,9 @@ bool gsky::net::socket::is_deleteble() {
     if(wait_event_count_ > 0)
         return false;
     return true;
+}
+
+
+void gsky::net::socket::handle_error() {
+    handle_close();
 }

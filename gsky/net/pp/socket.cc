@@ -2,6 +2,8 @@
 
 #include <time.h>
 #include <stdlib.h>
+#include <sys/socket.h>
+#include <netinet/tcp.h>
 #include <arpa/inet.h>
 
 #include <gsky/crypto/pe.hh>
@@ -71,11 +73,16 @@ void gsky::net::pp::socket::set_disconnecting_handler(std::function<void()> func
 // 接收数据回调
 void gsky::net::pp::socket::handle_read() {
 #ifdef DEBUG
-                dlog << "gsky::net::pp::socket::handle_read()\n";
+            dlog << "gsky::net::pp::socket::handle_read()\n";
 #endif
     do {
+        // 由于采用epoll ET边缘触发模式，读取数据必须一次性读完缓冲区。
         if(status_ == status::parse_header) {
-            int read_len = gsky::net::util::read(fd_, (void*)&header_, sizeof(pp::header)); // read data
+            int read_len = gsky::net::util::read(fd_, in_buffer_); // read data
+#ifdef INFO
+            std::cout << std::hex;
+        info() << "Recv PP header.... read length: " << read_len  << "\n";
+#endif
             if(read_len == 0) {
 #ifdef DEBUG
                 dlog << "is_disconnected 1\n";
@@ -85,67 +92,98 @@ void gsky::net::pp::socket::handle_read() {
             }else if(read_len < 0) {
                 break; // 重新接收
             }
-
-            if(read_len != sizeof(pp::header)  || header_.magic != 0x5050) {
+            memcpy(&header_, in_buffer_.data(), sizeof(pp::header)); //拷贝头部
+            if(header_.magic != 0x5050) {
                 handle_error(pp::status::protocol_error);
                 break;
             }
+            header_.length = ntohl(header_.length);
 
-
-            body_left_length_ = ntohl(header_.length);
-            if(body_left_length_ >= 1024 * 1024 * 100) { // 大于100 MB
+            if(header_.length >= 1024 * 1024 * 100) { // 大于100 MB
+#ifdef INFO
+     info() << "request data too_big: " << client_info_["ip"] << ":" << client_info_["port"] << "\n"; 
+#endif
                 handle_error(pp::status::too_big);
                 break;
             }
 
             // 验证头部信息, checkcode
             if(is_invalid()) {
+#ifdef INFO
+     info() << "invalid_transfer: " << client_info_["ip"] << ":" << client_info_["port"] << "\n"; 
+#endif
                 handle_disconnect();
                 break; // 验证失败，断开连接。
             }
-
-            in_buffer_.resize(body_left_length_); // 重置缓冲区
-
+#ifdef INFO
+        info() << "Buffer size: " << in_buffer_.size() << " Total length: " << (header_.length + 0x10);
+#endif
+            in_buffer_.resize(header_.length + sizeof(pp::header)); // 修改缓冲区大小
             //logger() << "read data from " + client_ip_ + ":" + client_port_;
-#ifdef DEBUG
-            info() << "read: size: " << read_len << " migic: " << header_.magic << " length: " << body_left_length_ << "\n";
+#ifdef INFO
+            info() << "read: size: " << read_len << " migic: " << header_.magic << " length: " << header_.length;
             printf("router: ");
             for(int i = 0; i < 6; i ++) {
                 printf(" %02X", header_.route[i]);
             }
             printf("\n");
 #endif
-            logger() << ("Request length: " + std::to_string(body_left_length_));
+            logger() << ("Request length: " + std::to_string(header_.length));
 
-            status_ = status::recv_content;
+            if(in_buffer_.size() >= header_.length + sizeof(pp::header)) { //已经收完整个数据包
+                status_ = status::work;
+#ifdef INFO
+        info() << "Recv all pp data\n";
+#endif
+            }else {
+                status_ = status::recv_content; //未收完数据包
+            }
         }
 
-        // 接收数据部分
+        // 接收剩余数据部分
         if(status_ == status::recv_content) {
+    /*
+            if(in_buffer_.size() >= header_.length + sizeof(pp::header)) { //已经收完整个数据包
+                status_ = status::work;
+            }
+    */
 
-
-            int read_len = gsky::net::util::read(fd_, in_buffer_, body_left_length_);
-            if(read_len == 0 && header_.length != 0) {
-#ifdef DEBUG
-                dlog << "is_disconnected 2\n";
+            int read_len = gsky::net::util::read(fd_, in_buffer_);
+#ifdef INFO
+        info() << "Recv PP body.... read length: " << read_len  << "\n";
 #endif
-                handle_disconnect();
+            if(read_len == 0) {
+                // 对socket再次判断是否断开连接
+                struct tcp_info tcp_info;
+                int len= sizeof(tcp_info);
+                getsockopt(fd_, IPPROTO_TCP, TCP_INFO, &tcp_info, (socklen_t *)&len);
+                if((tcp_info.tcpi_state != TCP_ESTABLISHED)) { // 断开连接
+#ifdef INFO
+                info() << "is_disconnected 2 : recv_len" << read_len << " header_length: " << header_.length << "\n";
+#endif
+                    handle_disconnect();
+                }
+
                 break;
             }else if(read_len < 0) {
+#ifdef INFO
+                info() << "Continue recv.... " << "readed data size" << in_buffer_.size() << " left" << (header_.length + 16 - in_buffer_.size());
+#endif
                 break; // 重新接收
             }
 
-            body_left_length_ -= read_len;
-            if(body_left_length_ <= 0) {
+            if(in_buffer_.size() >= header_.length + sizeof(pp::header)) { //已经收完整个数据包
                 status_ = status::work;
             }
-#ifdef DEBUG
-            info() << "pp::socket read: size: " << read_len << " body_left_length_: " << body_left_length_ << "\n";
-#endif
         }
         
         if(status_ == status::work) {
+#ifdef INFO
+        info() << "Recved OK works: \n";
+#endif
             // 接收完成，解密与处理请求
+            in_buffer_.sub(sizeof(pp::header)); // 把头部信息去去掉。
+
             if(is_sended_key_ == false) {
                 if(header_.status == (unsigned char)pp::status::connect) {
                     send_key();
@@ -162,6 +200,10 @@ void gsky::net::pp::socket::handle_read() {
                 break;
             }
 
+#ifdef INFO
+            info() << "";
+            std::cout << "decode size: " << std::hex << in_buffer_.size() << "\n";
+#endif
             // 数据解密
             crypto::pe().decode(key_, in_buffer_.data(), in_buffer_.size());
             this->handle_work();
@@ -216,6 +258,9 @@ void gsky::net::pp::socket::send_data(const std::string &data) {
  * */
 
 void gsky::net::pp::socket::push_data(const std::string &data) {
+#ifdef DEBUG
+    dlog << "push_data()\n";
+#endif
     // 存在数据正在写入
     std::shared_ptr<gsky::util::vessel> out_buffer = std::shared_ptr<gsky::util::vessel>(new gsky::util::vessel());
     pp::header header;
@@ -245,6 +290,12 @@ void gsky::net::pp::socket::push_data(const std::string &data) {
  * */
 
 void gsky::net::pp::socket::handle_error(pp::status s) {
+
+#ifdef DEBUG
+    info() << "handle_error: status: ";
+    std::cout << std::hex << (unsigned int)s << std::endl;
+#endif
+
     std::shared_ptr<gsky::util::vessel> out_buffer = std::shared_ptr<gsky::util::vessel>(new gsky::util::vessel());
     pp::header header;
     memset(&header, 0, sizeof(pp::header));
@@ -276,8 +327,8 @@ void gsky::net::pp::socket::send_key() {
     srand(time(nullptr));
     unsigned int random_key_1 = random();
     unsigned int random_key_2 = random();
-#ifdef DEBUG
-    std::cout << "send key " << std::hex << random_key_1 << "  " << random_key_2 << "\n";
+#ifdef INFO
+    info() << "send key " << random_key_1 << "  " << random_key_2 << "\n";
 #endif
 
     memcpy(gen_key, &random_key_1, sizeof(unsigned int));

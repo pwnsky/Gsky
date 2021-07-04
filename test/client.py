@@ -100,7 +100,23 @@ def pp_send(d, route):
     p += (len(d) + 0).to_bytes(4, byteorder='big', signed=False)
     route = route.ljust(6, b'\x00')
     sk.send(p + PE_Encode(key, route + code))
-    sk.send(PE_Encode(key, d))
+    d = PE_Encode(key, d)
+    writed_len = 0;
+    while True:
+        if(writed_len >= len(d)):
+            print('发送')
+            print(d)
+            print('发送完毕')
+            break;
+        write_len = sk.send(d[writed_len:])
+        if(write_len < 0):
+            continue
+        elif(write_len == 0):
+            print('disconnect')
+            break
+        else:
+            writed_len += write_len
+
     print(b'key: ' + key)
     print(b'code: ' + code)
 
@@ -123,6 +139,9 @@ def pp_recv():
         if(len(body) >= length):
             break
         body += sk.recv(1)
+        if(len(body) == 200): # just for test
+            sleep(4)
+
     body = PE_Decode(key, body)
     return (ord(status), body)
 
@@ -138,12 +157,18 @@ pp_send(b'Yeah you are online!', b'\x20')
 if(status == 0x30): # 状态代码为OK
     print(b'recv: ' + d)
 
-print(sk.recv(16))
+pp_send(b'T' * 0x2000, b'\x20')
+print(sk.recv(100))
+'''
+(status, d) = pp_recv()
+if(status == 0x30): # 状态代码为OK
+    print(b'recv: ' + d)
+
+'''
 '''
 (status, d) = pp_recv()
 if(status == 0x30): # 状态代码为OK
     print('recved data again')
     print(b'recv: ' + d)
 '''
-
 sk.close()

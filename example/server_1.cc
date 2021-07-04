@@ -49,7 +49,7 @@ void server_run(net::pp::sp_request r, net::pp::sp_response w) {
         case RouteRoot::Echo: {
             std::cout << "Echo\n";
             w->push_data("Push data 1 to you: " + r->content());
-            w->push_data("Push data 2 to you: abc");
+//            w->push_data("Push data 2 to you: abc");
         } break;
         default: {
             std::cout << "Error\n";

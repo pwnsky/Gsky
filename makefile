@@ -6,6 +6,7 @@ GCC     := gcc
 CC      := g++ 
 CCFLAGS := -O3 -std=c++11 
 CCFLAGS += -DDEBUG
+CCFLAGS += -DINFO
 
 INCLUDE := -I.
 #LDFLAGS := -lpthread
