@@ -17,20 +17,11 @@
 #include <cstring>
 
 using logger = gsky::log::logger;
-
-gsky::net::net::net(int port,int number_of_thread) :
-    started_(false),
-    listened_(false),
-    port_(port),
-    number_of_thread_(number_of_thread),
-    base_eventloop_(new eventloop) {
-    base_eventloop_->set_name("base_eventloop");
-}
-
 gsky::net::net::net() :
     started_(false),
     listened_(false),
     base_eventloop_(new eventloop){
+    base_eventloop_->set_name("base_eventloop");
 
 }
 gsky::net::net::~net() {
@@ -38,9 +29,10 @@ gsky::net::net::~net() {
     delete base_eventloop_;
 };
 
-void gsky::net::net::init(int port, int number_of_thread) {
+void gsky::net::net::init(const std::string &ip, int port, int threads) {
+    ip_ = ip;
     port_ = port;
-    number_of_thread_ = number_of_thread;
+    threads_ = threads;
 }
 
 void gsky::net::net::start() {
@@ -59,7 +51,7 @@ void gsky::net::net::start() {
 
     accept_channel_ = std::shared_ptr<channel>(new channel(base_eventloop_));
     accept_channel_->set_fd(listen_fd);
-    up_eventloop_threadpool_ = std::unique_ptr<eventloop_threadpool>(new eventloop_threadpool(base_eventloop_, number_of_thread_));
+    up_eventloop_threadpool_ = std::unique_ptr<eventloop_threadpool>(new eventloop_threadpool(base_eventloop_, threads_));
     up_eventloop_threadpool_->start();
 
     accept_channel_->set_event(EPOLLIN | EPOLLET); // Set as accept data event
@@ -91,7 +83,11 @@ int gsky::net::net::listen() {
     struct sockaddr_in server_addr;
     bzero(&server_addr, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    if(ip_ == "0.0.0.0" || ip_ == ":") {
+        server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    }else {
+        server_addr.sin_addr.s_addr = inet_addr(ip_.c_str());
+    }
     server_addr.sin_port = htons(static_cast<uint16_t>(port_));
 
     if(bind(listen_fd, (struct sockaddr *)&server_addr, sizeof (server_addr)) == -1) {

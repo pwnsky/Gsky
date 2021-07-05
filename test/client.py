@@ -38,10 +38,11 @@ def PE_Encode(keys, data):
     data = data_arr
 
     for i in range(len(data)):
-        data[i] ^= keys[i % 8]
-        n = ((keys[i % 8] + keys[(i + 1) % 8]) * keys[(i + 2) % 8]) & 0xff
+        n = ((keys[i & 7] + keys[(i + 1) & 7]) * keys[(i + 2) & 7] + keys[(i + 2) & 7]) & 0xff
         data[i] ^= n ^ PEXorTable[n]
-        keys[i % 8] = (n * 2 + 3) & 0xff
+        keys[i & 7] = (n * 2 + 3) & 0xff
+        if((i & 0xf) == 0): //密钥重置
+            PE_KeyRandom(keys, seed)
 
     out = b''
     for c in data:
@@ -71,15 +72,16 @@ def PE_Decode(keys, data):
         out += c.to_bytes(1, byteorder='little')
     return out
 
-DEBUG = 1
+DEBUG = 0
 uid = ''
 tid = ''
 sk = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 
 if(DEBUG == 1):
     sk.connect(('pwnsky.com', 4096))
-#else:
-#    sk.connect(('pwnsky.com', 4096))
+else:
+    sk.connect(('127.0.0.1', 4096))
+
 key = b'\x00' * 8
 code = b''
 

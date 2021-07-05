@@ -165,6 +165,7 @@ public:
             }
             pe().decode(key_, recv_buffer->data(), recv_buffer->size()); // decrypt key
         } while(false);
+        info() << "接收完成!\n";
         return recv_buffer;
     }
 
@@ -179,8 +180,8 @@ private:
 
 int main() {
     pp_client ppc;    
-    if(ppc.connect("43.129.244.165", 4096)) {
-    //if(ppc.connect("127.0.0.1", 4096)) {
+    //if(ppc.connect("43.129.244.165", 4096)) {
+    if(ppc.connect("127.0.0.1", 4096)) {
         info() << "连接成功!\n";
     }
 

@@ -71,6 +71,11 @@ void server_run(net::pp::sp_request r, net::pp::sp_response w) {
 int main(int argc, char **argv) {
     ::signal(SIGINT, gsky_exit); // Ctrl + c 退出服务器
     int opt = 0;
+    ser.set_logger_path("./gsky.log"); // 设置服务日志路径 logger path, Default "./gksy.log"
+    ser.set_listen("0.0.0.0", 4096); // 设置服务日志路径, Defualt "0.0.0.0" 4096
+    ser.set_threads(2);          // 设置服务线程数量,  Default 4
+    //ser.set_protocol("pp"); // 设置协议, Default "pp"
+    ser.set_pp_server_handler(server_run); // 设置服务器回调函数
 
     // 获取参数
     while((opt = getopt(argc, argv,"h::v::a::c:"))!=-1) {
@@ -81,7 +86,7 @@ int main(int argc, char **argv) {
         } break;
         case 'c': { 
             // 设置服务器配置文件路径
-            ser.set_config_path(optarg);
+            ser.load_config(optarg);
         } break;
         case 'v': {
             // 显示 gsky lib 的版本号
@@ -95,8 +100,6 @@ int main(int argc, char **argv) {
         }
     }
 
-    // 设置服务器回调函数
-    ser.set_pp_server_handler(server_run);
     ser.run(); // 启动gsky服务器
     return 0;
 }

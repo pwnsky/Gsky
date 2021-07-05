@@ -20,8 +20,12 @@ void test_2() {
     unsigned char key[8] = {3, 2, 3, 4, 5, 6, 7, 8};
     crypto::pe p;    
     util::vessel v; 
-    v.resize(0x10000);
+    std::string msg;
+    msg.resize(0x100);
+    v << msg;
+
     p.encode(key, v.data(), v.size());
+    std::cout << "加密后: " << v.to_string();
 }
 int main() {
     test_2();

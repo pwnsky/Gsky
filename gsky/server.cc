@@ -37,10 +37,6 @@ void gsky::server::set_pp_server_handler(gsky::net::pp::server_handler h) {
 }
 
 
-// Set server configure file path
-void gsky::server::set_config_path(std::string config_path) {
-    config_path_ = config_path;
-}
 
 bool gsky::server::stop() {
     sp_net_->stop();
@@ -53,13 +49,11 @@ bool gsky::server::stop() {
 
 bool gsky::server::run() {
     bool err = true;
-    //setbuf(stdout, nullptr);
-    do {
-        if(load_config() == false) {
-            error() << "Load config file failed!\n";
-            break;
-        }
+#ifdef DEBUG
+    setbuf(stdout, nullptr);
+#endif
 
+    do {
         if(run_security_module() == false) {
             error() << "Run security module failed!\n";
             break;
@@ -72,7 +66,7 @@ bool gsky::server::run() {
 
         logger() << "*************  start gsky pp server...  ***************";
 #ifdef INFO
-        info() << "\ngsky server port: " << port_ << "  number of thread: " << number_of_thread_ << "\n"
+        info() << "\ngsky server port: " << port_ << "  threads: " << threads_ << "\n"
             << " Log file at: " << logger_path_ << "\n";
 #endif
 
@@ -87,12 +81,13 @@ bool gsky::server::run() {
 }
 
 // Load config file
-bool gsky::server::load_config() {
+// Set server configure file path
+bool gsky::server::load_config(const std::string &config_path) {
 #define MAX_BUF_SIZE 0x1000
     std::string file_json;
-    FILE* config_file_ptr = fopen(config_path_.c_str(), "r");
+    FILE* config_file_ptr = fopen(config_path.c_str(), "r");
     if(config_file_ptr == nullptr) {
-        error() << "open config file: " << config_path_ << " failed!\n";
+        error() << "open config file: " << config_path << " failed!\n";
         exit(-1);
     }
     while(!feof(config_file_ptr)) {
@@ -113,7 +108,7 @@ bool gsky::server::load_config() {
     // Parse json
     try {
         port_ = obj["port"];
-        number_of_thread_ = obj["number_of_thread"];
+        threads_ = obj["threads"];
         protocol_ = obj["protocol"];
         logger_path_ = obj["log"];
     } catch (util::json::exception &e) {
@@ -139,13 +134,29 @@ bool gsky::server::load_config() {
     return true;
 }
 
+void gsky::server::set_logger_path(const std::string &logger_path) {
+    logger_path_ = logger_path;
+}
+
+void gsky::server::set_protocol(const std::string &protocol) {
+    protocol_ = protocol;
+}
+
+void gsky::server::set_threads(int n) {
+    threads_ = n;
+}
+
+void gsky::server::set_listen(const std::string &ip, unsigned short port) {
+    ip_ = ip;
+    port_ = port;
+}
+
 bool gsky::server::run_network_module() {
     if(port_ <= 1024 && getuid() != 0) {
        error() << "Must be root\n";
        return false;
     }
-
-    sp_net_->init(port_, number_of_thread_);
+    sp_net_->init(ip_, port_, threads_);
     sp_net_->start();
     return true;
 }
