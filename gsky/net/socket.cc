@@ -65,11 +65,17 @@ void gsky::net::socket::set_disconnecting() {
     status_ = status::disconnecting;
 }
 
-// 关闭释放连接
+// 释放连接
 void gsky::net::socket::handle_close() {
 #ifdef DEBUG
     dlog << "call gsky::net::socket::handle_close()\n";
 #endif
+
+    //先调用用户断开回调函数
+    if(pp::offline_handler_) {
+        pp::offline_handler_(fd_);
+    }
+
     std::shared_ptr<socket> guard(shared_from_this()); // 计数+1，避免直接删除本身对象，需从epoll中进行删除后再删除自己。
     eventloop_->remove_from_epoll(sp_channel_);
 }

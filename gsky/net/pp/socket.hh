@@ -15,7 +15,9 @@ namespace pp {
 using sp_response = std::shared_ptr<response>;
 using sp_request = std::shared_ptr<request>;
 typedef void (*server_handler) (sp_request , sp_response);
+typedef void (*offline_handler) (int);
 extern server_handler server_handler_;
+extern offline_handler offline_handler_;
 
 class socket {
 public:

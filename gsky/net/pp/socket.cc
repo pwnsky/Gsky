@@ -19,7 +19,8 @@
  * */
 
 using logger = gsky::log::logger;
-gsky::net::pp::server_handler gsky::net::pp::server_handler_;
+gsky::net::pp::server_handler gsky::net::pp::server_handler_ = nullptr;
+gsky::net::pp::offline_handler gsky::net::pp::offline_handler_ = nullptr; //客户端断开连接调用该函数
 
 gsky::net::pp::socket::socket(int fd) :
     fd_(fd),
@@ -34,6 +35,7 @@ gsky::net::pp::socket::socket(int fd) :
     response_->set_send_data_handler(std::bind(&pp::socket::send_data, this, std::placeholders::_1));
     response_->set_push_data_handler(std::bind(&pp::socket::push_data, this, std::placeholders::_1));
     request_->set_route(header_.route);
+    request_->fd = fd_;
 }
 
 gsky::net::pp::socket::~socket() {

@@ -19,6 +19,7 @@ public:
 
     // Set server handler
     void set_pp_server_handler(gsky::net::pp::server_handler h);
+    void set_pp_offline_handler(gsky::net::pp::offline_handler h);
     bool load_config(const std::string &config_path);
     void set_logger_path(const std::string &logger_path);
     void set_listen(const std::string &ip, unsigned short port);

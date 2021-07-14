@@ -20,6 +20,7 @@ public:
     std::string content();
     gsky::util::vessel &raw_content();
     void set_route(unsigned char route[]);
+    int fd;
 private:
     unsigned char *route_;
     std::string session_;

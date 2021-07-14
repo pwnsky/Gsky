@@ -35,7 +35,7 @@ enum class RouteRoot {
 
 // 服务器回调函数, 函数格式为 void func(sp_request r, sp_response w)
 void server_run(net::pp::sp_request r, net::pp::sp_response w) {
-    log::info() << "收到数据: " << r->content() << '\n';
+    log::info() << "client: " << r->fd << " 收到数据: " << r->content() << '\n';
     switch((RouteRoot)r->route(0)) {
         case RouteRoot::TestError: {
         log::info() << "TestError";
@@ -68,6 +68,11 @@ void server_run(net::pp::sp_request r, net::pp::sp_response w) {
     }
 }
 
+// 断开连接处理函数，fd为客户端文件描述符
+void offline_func(int fd) {
+    std::cout << "client: " << fd << " offline ...\n";   
+}
+
 int main(int argc, char **argv) {
     ::signal(SIGINT, gsky_exit); // Ctrl + c 退出服务器
     int opt = 0;
@@ -76,6 +81,7 @@ int main(int argc, char **argv) {
     ser.set_threads(2);          // 设置服务线程数量,  Default 4
     //ser.set_protocol("pp"); // 设置协议, Default "pp"
     ser.set_pp_server_handler(server_run); // 设置服务器回调函数
+    ser.set_pp_offline_handler(offline_func); // 设置客户端断开回调函数
 
     // 获取参数
     while((opt = getopt(argc, argv,"h::v::a::c:"))!=-1) {

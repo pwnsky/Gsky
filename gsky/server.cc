@@ -36,7 +36,10 @@ void gsky::server::set_pp_server_handler(gsky::net::pp::server_handler h) {
     gsky::net::pp::server_handler_ = h; 
 }
 
-
+// Set server's client offline handler
+void gsky::server::set_pp_offline_handler(gsky::net::pp::offline_handler h) {
+    gsky::net::pp::offline_handler_ = h; 
+}
 
 bool gsky::server::stop() {
     sp_net_->stop();
