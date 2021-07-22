@@ -57,6 +57,7 @@ void gsky::net::pp::socket::handle_close() {
 #ifdef DEBUG
     dlog << "call gsky::net::pp::socket::handle_close()\n";
 #endif
+    response_->clean_handler();
 }
 
 void gsky::net::pp::socket::set_send_data_handler(std::function<void(std::shared_ptr<gsky::util::vessel>)> func) {

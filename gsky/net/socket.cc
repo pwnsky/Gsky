@@ -75,6 +75,7 @@ void gsky::net::socket::handle_close() {
     if(pp::offline_handler_) {
         pp::offline_handler_(fd_);
     }
+    sp_pp_socket_->handle_close();    
 
     std::shared_ptr<socket> guard(shared_from_this()); // 计数+1，避免直接删除本身对象，需从epoll中进行删除后再删除自己。
     eventloop_->remove_from_epoll(sp_channel_);

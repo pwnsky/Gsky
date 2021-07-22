@@ -55,7 +55,7 @@ private:
     std::function<void(std::shared_ptr<gsky::util::vessel>)> push_data_handler_;
 
     std::shared_ptr<gsky::net::pp::request>  request_;   // pp协议，request
-    std::shared_ptr<gsky::net::pp::response> response_; // pp协议，response
+    std::shared_ptr<gsky::net::pp::response> response_;  // pp协议，response
 
     unsigned char key_[8] = {0}; // 初始化为0
     std::map<std::string, std::string> client_info_;
