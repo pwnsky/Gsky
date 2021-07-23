@@ -67,6 +67,7 @@ private:
     void send_key(); // 发送pe key给客户端
     void send_data(const std::string &data);
     void push_data(const std::string &data);
+    void set_route(unsigned char route[]);
 };
 
 

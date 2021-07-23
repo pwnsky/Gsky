@@ -34,6 +34,7 @@ gsky::net::pp::socket::socket(int fd) :
     //set std::function<void()> function handler
     response_->set_send_data_handler(std::bind(&pp::socket::send_data, this, std::placeholders::_1));
     response_->set_push_data_handler(std::bind(&pp::socket::push_data, this, std::placeholders::_1));
+    response_->set_route_handler(std::bind(&pp::socket::set_route, this, std::placeholders::_1));
     request_->set_route(header_.route);
     request_->fd = fd_;
 }
@@ -209,8 +210,8 @@ void gsky::net::pp::socket::handle_read() {
 #endif
             // 数据解密
             crypto::pe().decode(key_, in_buffer_.data(), in_buffer_.size());
-            this->handle_work();
-            in_buffer_.clear();
+            handle_work();
+            //in_buffer_.clear();
             status_ = status::finish;
         }
         
@@ -218,7 +219,7 @@ void gsky::net::pp::socket::handle_read() {
 
     // end
     if(status_ == status::finish) {
-        this->reset();
+        reset();
         //if network is disconnected, do not to clean write data buffer, may be it reconnected
     }
 }
@@ -305,7 +306,7 @@ void gsky::net::pp::socket::handle_error(pp::status s) {
     header.magic = 0x5050;
     header.status = (unsigned char)s;
     header.type = 0;
-    memcpy(header.route, header_.route, sizeof(header.route));
+    memcpy(header.route, header_.route, 6);
     header.length = 0;
     out_buffer->append(&header, sizeof(struct pp::header));
 
@@ -380,4 +381,13 @@ void gsky::net::pp::socket::set_client_info(const std::string &ip, const std::st
         client_info_["ip"] = ip;
         client_info_["port"] = port;
         //map_client_info_["session"] = session_;
+}
+
+// copy route 
+void gsky::net::pp::socket::set_route(unsigned char route[]) {
+#ifdef DEBUG
+    dlog << "set_route()";
+#endif
+
+    memcpy(header_.route, route, 6);
 }
