@@ -6,7 +6,6 @@ gsky::net::pp::request::request(const std::map<std::string, std::string> &client
     content_(content) {
 }
 
-
 void gsky::net::pp::request::set_route(unsigned char route[]) {
     route_ = route;
 }

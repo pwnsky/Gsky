@@ -10,11 +10,11 @@ namespace gsky {
 namespace net {
 namespace pp {
 
-class response {
+class writer {
     using json = gsky::util::json;
 public:
-    explicit response(); // uid for deal with offline
-    ~response();
+    explicit writer(); // uid for deal with offline
+    ~writer();
     void set_send_data_handler(std::function<void(const std::string &)> h);
     void set_push_data_handler(std::function<void(const std::string &)> h);
     void set_route_handler(std::function<void(unsigned char [])> h);

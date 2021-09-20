@@ -32,14 +32,28 @@ gsky::server::~server() {
 }
 
 // Set server handler
-void gsky::server::set_pp_server_handler(gsky::net::pp::server_handler h) {
-    gsky::net::pp::server_handler_ = h; 
-}
+//void gsky::server::set_pp_server_handler(gsky::net::pp::server_handler h) {
+//    gsky::net::pp::server_handler_ = h; 
+//}
 
 // Set server's client offline handler
-void gsky::server::set_pp_offline_handler(gsky::net::pp::offline_handler h) {
-    gsky::net::pp::offline_handler_ = h; 
+//void gsky::server::set_pp_offline_handler(gsky::net::pp::offline_handler h) {
+//    gsky::net::pp::offline_handler_ = h; 
+//}
+//
+
+/*
+void request(sp_request r, sp_writer w) {
+#ifdef INFO
+    info() << "server fd: " << r->fd << "request\n";
+#endif
 }
+
+void offline(int fd) {
+#ifdef INFO
+    info() << "server fd: " << fd << "offline\n";
+#endif
+}*/
 
 bool gsky::server::stop() {
     sp_net_->stop();
@@ -55,6 +69,8 @@ bool gsky::server::run() {
 #ifdef DEBUG
     setbuf(stdout, nullptr);
 #endif
+    gsky::net::pp::request_handler = std::bind(&gsky::server::request, this, std::placeholders::_1, std::placeholders::_2);
+    gsky::net::pp::offline_handler = std::bind(&gsky::server::offline, this, std::placeholders::_1);
 
     do {
         if(run_security_module() == false) {

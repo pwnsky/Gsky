@@ -19,22 +19,27 @@
  * */
 
 using logger = gsky::log::logger;
-gsky::net::pp::server_handler gsky::net::pp::server_handler_ = nullptr;
-gsky::net::pp::offline_handler gsky::net::pp::offline_handler_ = nullptr; //客户端断开连接调用该函数
+using namespace gsky::net::pp;
+
+//gsky::net::pp::server_handler gsky::net::pp::server_handler_ = nullptr;
+//gsky::net::pp::offline_handler gsky::net::pp::offline_handler_ = nullptr; //客户端断开连接调用该函数
+
+std::function<void(sp_request, sp_writer)> gsky::net::pp::request_handler = nullptr;
+std::function<void(int)> gsky::net::pp::offline_handler = nullptr;
 
 gsky::net::pp::socket::socket(int fd) :
     fd_(fd),
     status_(status::parse_header),
     request_(new gsky::net::pp::request(client_info_, in_buffer_)),
-    response_(new gsky::net::pp::response()) {
+    writer_(new gsky::net::pp::writer()) {
 
 #ifdef DEBUG
     dlog << "call gsky::net::pp::socket::socket()\n";
 #endif
     //set std::function<void()> function handler
-    response_->set_send_data_handler(std::bind(&pp::socket::send_data, this, std::placeholders::_1));
-    response_->set_push_data_handler(std::bind(&pp::socket::push_data, this, std::placeholders::_1));
-    response_->set_route_handler(std::bind(&pp::socket::set_route, this, std::placeholders::_1));
+    writer_->set_send_data_handler(std::bind(&pp::socket::send_data, this, std::placeholders::_1));
+    writer_->set_push_data_handler(std::bind(&pp::socket::push_data, this, std::placeholders::_1));
+    writer_->set_route_handler(std::bind(&pp::socket::set_route, this, std::placeholders::_1));
     request_->set_route(header_.route);
     request_->fd = fd_;
 }
@@ -55,10 +60,14 @@ void gsky::net::pp::socket::reset() {
 }
 
 void gsky::net::pp::socket::handle_close() {
+    //先调用用户断开回调函数
+    if(pp::offline_handler) {
+        pp::offline_handler(fd_);
+    }
 #ifdef DEBUG
     dlog << "call gsky::net::pp::socket::handle_close()\n";
 #endif
-    response_->clean_handler();
+    writer_->clean_handler();
 }
 
 void gsky::net::pp::socket::set_send_data_handler(std::function<void(std::shared_ptr<gsky::util::vessel>)> func) {
@@ -203,7 +212,6 @@ void gsky::net::pp::socket::handle_read() {
                 handle_error(pp::status::invalid_transfer);
                 break;
             }
-
 #ifdef INFO
             info() << "";
             std::cout << "decode size: " << std::hex << in_buffer_.size() << "\n";
@@ -228,11 +236,11 @@ void gsky::net::pp::socket::handle_work() {
 #ifdef DEBUG
     dlog << "call gsky::net::pp::socket::handle_work()\n";
 #endif
-    if(gsky::net::pp::server_handler_ == nullptr) {
-        dlog << "server_handler is nullptr\n";
+    if(gsky::net::pp::request_handler == nullptr) {
+        dlog << "request_handler is nullptr\n";
         return;
     }
-    gsky::net::pp::server_handler_(request_, response_);
+    gsky::net::pp::request_handler(request_, writer_);
 }
 
 void gsky::net::pp::socket::send_data(const std::string &data) {

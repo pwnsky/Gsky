@@ -3,10 +3,13 @@
 #include <gsky/gsky.hh>
 #include <gsky/log/logger_thread.hh>
 #include <gsky/net/net.hh>
+#include <gsky/net/pp/socket.hh>
 
 using logger = gsky::log::logger;
+using namespace gsky::net::pp;
+
 namespace gsky {
-class server final{
+class server {
 public:
      server();
     ~server();
@@ -16,15 +19,14 @@ public:
     bool run_logger_module();
     bool run_security_module();
     bool run_network_module();
-
-    // Set server handler
-    void set_pp_server_handler(gsky::net::pp::server_handler h);
-    void set_pp_offline_handler(gsky::net::pp::offline_handler h);
     bool load_config(const std::string &config_path);
     void set_logger_path(const std::string &logger_path);
     void set_listen(const std::string &ip, unsigned short port);
     void set_threads(int n);
     void set_protocol(const std::string &protocol);
+
+    virtual void request(sp_request r, sp_writer w) {}
+    virtual void offline(int fd) {}
 
 private:
     int threads_ = 4;
