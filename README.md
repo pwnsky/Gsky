@@ -91,7 +91,13 @@ build
 
 using namespace gsky;
 
-server ser; // 创建服务器
+class gsky_server : public gsky::server {
+protected:
+    void request(sp_request r, sp_writer w) override;
+    void offline(int fd) override;
+};
+
+gsky_server ser; // 创建服务器
 
 void gsky_exit(int s) {
     UNUSED(s);
@@ -113,9 +119,8 @@ enum class RouteRoot {
     TestMultiPush = 0x30,
 };
 
-// 服务器回调函数, 函数格式为 void func(sp_request r, sp_response w)
-void server_run(net::pp::sp_request r, net::pp::sp_response w) {
-    log::info() << "收到数据: " << r->content() << '\n';
+void gsky_server::request(sp_request r, sp_writer w) {
+    log::info() << "client: " << r->fd << " 收到数据: " << r->content() << '\n';
     switch((RouteRoot)r->route(0)) {
         case RouteRoot::TestError: {
         log::info() << "TestError";
@@ -148,9 +153,18 @@ void server_run(net::pp::sp_request r, net::pp::sp_response w) {
     }
 }
 
+// 断开连接处理函数，fd为客户端文件描述符
+void gsky_server::offline(int fd) {
+    std::cout << "client: " << fd << " offline ...\n";   
+}
+
 int main(int argc, char **argv) {
     ::signal(SIGINT, gsky_exit); // Ctrl + c 退出服务器
     int opt = 0;
+    ser.set_logger_path("./gsky.log"); // 设置服务日志路径 logger path, Default "./gksy.log"
+    ser.set_listen("0.0.0.0", 4096);   // 设置服务日志路径, Defualt "0.0.0.0" 4096
+    ser.set_threads(2);                // 设置服务线程数量,  Default 4
+    //ser.set_protocol("pp");          // 设置协议, Default "pp"
 
     // 获取参数
     while((opt = getopt(argc, argv,"h::v::a::c:"))!=-1) {
@@ -161,7 +175,7 @@ int main(int argc, char **argv) {
         } break;
         case 'c': { 
             // 设置服务器配置文件路径
-            ser.set_config_path(optarg);
+            ser.load_config(optarg);
         } break;
         case 'v': {
             // 显示 gsky lib 的版本号
@@ -174,12 +188,10 @@ int main(int argc, char **argv) {
         }
         }
     }
-
-    // 设置服务器回调函数
-    ser.set_pp_server_handler(server_run);
     ser.run(); // 启动gsky服务器
     return 0;
 }
+
 ```
 
 
