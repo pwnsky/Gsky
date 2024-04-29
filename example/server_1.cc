@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
     int opt = 0;
     ser.set_logger_path("./gsky.log"); // 设置服务日志路径 logger path, Default "./gksy.log"
     ser.set_listen("0.0.0.0", 4096);   // 设置服务日志路径, Defualt "0.0.0.0" 4096
-    ser.set_threads(2);                // 设置服务线程数量,  Default 4
+    ser.set_threads(8);                // 设置服务线程数量,  Default 4
     //ser.set_protocol("pp");          // 设置协议, Default "pp"
 
     // 获取参数

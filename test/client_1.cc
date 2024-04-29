@@ -147,9 +147,9 @@ public:
 
             readed_len = 0;
             while(recv_buffer->size() < length) {
-                char buf[1024];
-                int left = (length - recv_buffer->size()) % 1024;
-                left = left ? left : 1024;
+                char buf[10240];
+                int left = (length - recv_buffer->size()) % 10240;
+                left = left ? left : 10240;
 
                 info() << "接受Content数据中... " << readed_len << "/" <<  length << " left%: " << left << "\n";
                 int read_len = read(fd_, buf, left); // read key

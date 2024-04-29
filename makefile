@@ -16,6 +16,7 @@ CP      := cp -r
 MKDIR   := mkdir -p
 BUILD_PATH   := ./build
 INSTALL_PATH := /usr/lib
+MKDIR        := mkdir -p
 
 # gsky path
 NET_PATH    :=  ./gsky/net
@@ -74,6 +75,7 @@ OBJS += $(CRYPTO_OBJ)
 # complie
 libgsky.so:$(OBJS)
 	$(CC) -fPIC -shared $^ -o $(BUILD_PATH)/lib/$@
+	$(MKDIR) $(BUILD_PATH)/include/gsky/
 	$(CP) gsky/* $(BUILD_PATH)/include/gsky/
 	find $(BUILD_PATH)/include/ -type f -not -name "*.h*" | xargs rm
 

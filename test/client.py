@@ -41,7 +41,7 @@ def PE_Encode(keys, data):
         n = ((keys[i & 7] + keys[(i + 1) & 7]) * keys[(i + 2) & 7] + keys[(i + 2) & 7]) & 0xff
         data[i] ^= n ^ PEXorTable[n]
         keys[i & 7] = (n * 2 + 3) & 0xff
-        if((i & 0xf) == 0): //密钥重置
+        if((i & 0xf) == 0): #密钥重置
             PE_KeyRandom(keys, seed)
 
     out = b''
